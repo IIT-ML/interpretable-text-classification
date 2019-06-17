@@ -12,7 +12,7 @@ To quick demo on the notebook please go to the following:
 Sentiment Analysis
 1. [IMDB](https://ai.stanford.edu/~amaas/data/sentiment/)
 2. Amazon
-3. E-commerce
+3. [E-commerce](https://www.kaggle.com/nicapotato/womens-ecommerce-clothing-reviews)
 
 ### Keyword (.txt format)
 1. IMDB (83 keyword) link [here](https://github.com/annekehdyt/interpretable-cautious-text/blob/master/data/imdb-unigrams.txt)
