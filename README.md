@@ -11,7 +11,7 @@ To quick demo on the notebook please go to the following:
 ### Dataset
 Sentiment Analysis
 1. [IMDB](https://ai.stanford.edu/~amaas/data/sentiment/)
-2. Amazon
+2. [Amazon](http://jmcauley.ucsd.edu/data/amazon/)
 3. [E-commerce](https://www.kaggle.com/nicapotato/womens-ecommerce-clothing-reviews)
 
 ### Keyword (.txt format)
