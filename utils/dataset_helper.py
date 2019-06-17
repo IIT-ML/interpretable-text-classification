@@ -121,24 +121,73 @@ def load_amazon(path, shuffle=True,
                 lower=False, 
                 tokenize=True, 
                 train_test_split=True,
-                test_split=None):
+                test_split=None,
+                random_state = 42):
 
     def parse(path):
-    g = gzip.open(path, 'r')
-    for l in g:
-        yield eval(l)
+        g = gzip.open(path, 'r')
+        for l in g:
+            yield eval(l)
 
     def extract_review_amazon(path, key):
-    corpus = []
-    y = []
-    text = parse(path)
-    for l in text:
-        corpus.append(l[key])
-        y.append(l['overall'])
-    return corpus, np.asarray(y)
+        corpus = []
+        y = []
+        text = parse(path)
+        for l in text:
+            corpus.append(l[key])
+            y.append(l['overall'])
+        return corpus, np.asarray(y)
+
+
+    X, y = extract_review_amazon(path, 'reviewText')
+    neutral_indices = np.where(y_label == 3)[0]
+
+    y[y < 3] = 0
+    y[y > 3] = 1
+
+    X_final = np.delete(X, neutral_indices)
+    y_final = np.delete(y, neutral_indices)
+
+    del X, y
+
+    if shuffle:
+        np.random.seed(random_state)
+        indices = np.random.permutation(len(y_train))       
+        
+        X_train_corpus = [X_train_corpus[i] for i in indices]
+        y_train = y_train[indices]
+        
+        indices = np.random.permutation(len(y_test))
+        
+        X_test_corpus = [X_test_corpus[i] for i in indices]
+        y_test = y_test[indices]
+        logging.info('Shuffled.')
+    
+    if lower:
+        X_final = [text.lower() for text in X_final]
+        logging.info('Lowered.')
+        
+    if tokenize:
+        X_final = [word_tokenize(text) for text in X_final]
+        logging.info('Tokenized.')
 
     
-    X, y = extract_review_amazon(path, 'reviewText')
+    if train_test_split:
+        import sklearn
+
+        if test_split is not None:
+            test = test_split
+        else:
+            test = 0.33
+
+        X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X_final, 
+                                                                                    y_final, 
+                                                                                    test_size=test, 
+                                                                                    random_state=random_state)
+
+        return X_train, X_test, y_train, y_test
+    else:
+        return X_final, y_final
     
 
         
