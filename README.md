@@ -1,7 +1,8 @@
 # Interpretable and Cautious Text Classification
 
 ## Description
-This repo is our experiment on our paper "Interpretable and Cautious Text Classification" under preparation. 
+This repo is our experiment on our paper "Interpretable and Cautious Text Classification" under preparation. <br>
+To see the detail report please refer to this link.
 
 ## Demo
 To quick demo on the notebook please go to the following:
