@@ -1,9 +1,9 @@
 # Experiment Report here
 
 ## Initial result by June 2019
-| Dataset | Approach |
+| Training approach | IMDB |
 | --- | --- |
-| IMDB | List all new or modified files |
-| - | Show file differences that haven't been staged |
-| - | List all new or modified files |
+| Default-joint | - |
+| Pre-trained-Frozen | Show file differences that haven't been staged |
+| Pre-trained-Joint | List all new or modified files |
 | - | Show file differences that haven't been staged |
