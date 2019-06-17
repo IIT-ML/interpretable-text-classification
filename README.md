@@ -2,7 +2,7 @@
 
 ## Description
 This repo is our experiment on our paper "Interpretable and Cautious Text Classification" under preparation. <br>
-To see the detail report please refer to this link.
+To see the detail report please refer to this [link](https://github.com/IIT-ML/ann-mitchell-text-classification/blob/master/REPORT.md).
 
 ## Demo
 To quick demo on the notebook please go to the following:
