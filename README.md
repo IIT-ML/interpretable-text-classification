@@ -38,4 +38,4 @@ Example :
 <br><br>
 
 For explanation demo, please refer to [notebook](https://github.com/annekehdyt/interpretable-cautious-text/blob/master/Program%20Pipeline.ipynb)
-<br> The show_explanation function won't work if viewed in github. Please clone the repo and run the notebook
+<br> The ``show_explanation`` function won't work if viewed in github. Please clone the repo and run the notebook
