@@ -116,6 +116,29 @@ def load_imdb(path, shuffle=True, random_state=42, lower=False, tokenize=True):
     return X_train_corpus, y_train, X_test_corpus , y_test
 
 # TODO: load_amazon
-def load_amazon():
+def load_amazon(path, shuffle=True, 
+                random_state=42, 
+                lower=False, 
+                tokenize=True, 
+                train_test_split=True,
+                test_split=None):
+
+    def parse(path):
+    g = gzip.open(path, 'r')
+    for l in g:
+        yield eval(l)
+
+    def extract_review_amazon(path, key):
+    corpus = []
+    y = []
+    text = parse(path)
+    for l in text:
+        corpus.append(l[key])
+        y.append(l['overall'])
+    return corpus, np.asarray(y)
+
     
-    pass
+    X, y = extract_review_amazon(path, 'reviewText')
+    
+
+        

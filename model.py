@@ -338,28 +338,60 @@ if __name__ == "__main__":
         DATA_PATH = './dataset/aclImdb'
         KEYWORD_PATH = './data/imdb-unigrams.txt'
 
-        keyword = utils.get_keyword(KEYWORD_PATH)
-        X_train_corpus, y_train, X_test_corpus, y_test = dataset_helper.load_imdb(IMDB_PATH, lower=True, tokenize=True)
+        if os.path.exists(DATA_PATH) and os.path.exists(KEYWORD_PATH):
 
-        # 3. Create object to process keyword along with its connotation (keywordBank)
-        keywordObj = KeywordBank(keyword=keyword, 
-                                xtrain=X_train_corpus, 
-                                ytrain=y_train)
-        keywordObj.get_connotation()
+            keyword = utils.get_keyword(KEYWORD_PATH)
+            X_train_corpus, y_train, X_test_corpus, y_test = dataset_helper.load_imdb(IMDB_PATH, lower=True, tokenize=True)
 
-        # 4. Vectorize document and keyword for model input(s)
-        X_train, X_test = utils.vectorize_keywords_docs(X_train_corpus, X_test_corpus, imdbKeyword)
+            # 3. Create object to process keyword along with its connotation (keywordBank)
+            keywordObj = KeywordBank(keyword=keyword, 
+                                    xtrain=X_train_corpus, 
+                                    ytrain=y_train)
+            keywordObj.get_connotation()
+
+            # 4. Vectorize document and keyword for model input(s)
+            X_train, X_test = utils.vectorize_keywords_docs(X_train_corpus, X_test_corpus, keywordObj)
+        else:
+            raise ValueError('Path doesn\'t exist. Please check the availability of your data')
     elif args.dataset.lower() == 'amazon':
-        DATA_PATH = ''
-        KEYWORD_PATH = ''
+        DATA_PATH = './dataset/reviews_Amazon_Instant_Video_5.json'
+        KEYWORD_PATH = './data/amazon-video-unigrams-more.txt'
 
-        keyword = utils.get_keyword(KEYWORD_PATH)
+        if os.path.exists(DATA_PATH) and os.path.exists(KEYWORD_PATH):
+
+            keyword = utils.get_keyword(KEYWORD_PATH)
+            # X_train_corpus, y_train, X_test_corpus, y_test = dataset_helper.load_imdb(IMDB_PATH, lower=True, tokenize=True)
+
+            # 3. Create object to process keyword along with its connotation (keywordBank)
+            keywordObj = KeywordBank(keyword=keyword, 
+                                    xtrain=X_train_corpus, 
+                                    ytrain=y_train)
+            keywordObj.get_connotation()
+
+            # 4. Vectorize document and keyword for model input(s)
+            X_train, X_test = utils.vectorize_keywords_docs(X_train_corpus, X_test_corpus, keywordObj)
+        else:
+            raise ValueError('Path doesn\'t exist. Please check the availability of your data')
         
     elif args.dataset.lower() == 'e-commerce':
-        DATA_PATH = ''
-        KEYWORD_PATH =''
+        DATA_PATH = './dataset/womens-ecommerce-clothing-reviews/Womens_Clothing_E-Commerce_Reviews.csv'
+        KEYWORD_PATH ='./data/ecom-unigrams.txt'
 
-        keyword = utils.get_keyword(KEYWORD_PATH)
+        if os.path.exists(DATA_PATH) and os.path.exists(KEYWORD_PATH):
+
+            keyword = utils.get_keyword(KEYWORD_PATH)
+            # X_train_corpus, y_train, X_test_corpus, y_test = dataset_helper.load_imdb(IMDB_PATH, lower=True, tokenize=True)
+
+            # 3. Create object to process keyword along with its connotation (keywordBank)
+            keywordObj = KeywordBank(keyword=keyword, 
+                                    xtrain=X_train_corpus, 
+                                    ytrain=y_train)
+            keywordObj.get_connotation()
+
+            # 4. Vectorize document and keyword for model input(s)
+            X_train, X_test = utils.vectorize_keywords_docs(X_train_corpus, X_test_corpus, keywordObj)
+        else:
+            raise ValueError('Path doesn\'t exist. Please check the availability of your data')
 
     else:
         # TODO: add if there is any directory to new dataset.
