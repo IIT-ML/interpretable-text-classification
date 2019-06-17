@@ -335,8 +335,8 @@ if __name__ == "__main__":
     if args.dataset.lower() == 'imdb':
         # 1. Load keyword from txt file
         # 2. Load dataset
-        DATA_PATH = '/home/anneke/Documents/anneke-precision-github/data/aclImdb/'
-        KEYWORD_PATH = '/home/anneke/Documents/anneke-precision-github/Ann-Seq-2-Seq/code/data/imdb-unigrams.txt'
+        DATA_PATH = './dataset/aclImdb'
+        KEYWORD_PATH = './data/imdb-unigrams.txt'
 
         keyword = utils.get_keyword(KEYWORD_PATH)
         X_train_corpus, y_train, X_test_corpus, y_test = dataset_helper.load_imdb(IMDB_PATH, lower=True, tokenize=True)
@@ -350,9 +350,17 @@ if __name__ == "__main__":
         # 4. Vectorize document and keyword for model input(s)
         X_train, X_test = utils.vectorize_keywords_docs(X_train_corpus, X_test_corpus, imdbKeyword)
     elif args.dataset.lower() == 'amazon':
-        pass
+        DATA_PATH = ''
+        KEYWORD_PATH = ''
+
+        keyword = utils.get_keyword(KEYWORD_PATH)
+        
     elif args.dataset.lower() == 'e-commerce':
-        pass
+        DATA_PATH = ''
+        KEYWORD_PATH =''
+
+        keyword = utils.get_keyword(KEYWORD_PATH)
+
     else:
         # TODO: add if there is any directory to new dataset.
         pass
