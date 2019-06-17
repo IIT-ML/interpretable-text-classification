@@ -1,2 +1,1 @@
-# ann-mitchell-text-classification
-Interpretable and cautious text classification
+# Interpretable and Cautious Text Classification
