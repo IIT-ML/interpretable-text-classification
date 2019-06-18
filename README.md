@@ -15,6 +15,9 @@ Sentiment Analysis
 2. [Amazon](http://jmcauley.ucsd.edu/data/amazon/)
 3. [E-commerce](https://www.kaggle.com/nicapotato/womens-ecommerce-clothing-reviews)
 
+Scientific Paper Classification
+1. PeerRead [data](https://github.com/allenai/PeerRead)[summary](https://github.com/IIT-ML/ann-mitchell-text-classification/blob/master/data/PeerRead-meta.md)
+
 ### Keyword (.txt format)
 1. IMDB (83 keyword) link [here](https://github.com/annekehdyt/interpretable-cautious-text/blob/master/data/imdb-unigrams.txt)
 
