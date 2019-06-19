@@ -19,15 +19,13 @@ Total testing : 637<br>
 **Note**: I haven't fetch the NIPS papers due to license. Thus, our final data only consists of around 12K. <br> <br>
 
 # Web of Science Dataset
-Here is three datasets which include WOS-11967 , WOS-46985, and WOS-5736
-Web of Science Dataset WOS-11967
--This dataset contains 11,967 documents with 35 categories which include 7 parents categories.
-
-Web of Science Dataset WOS-46985
--This dataset contains 46,985 documents with 134 categories which include 7 parents categories.
-
-Web of Science Dataset WOS-5736
--This dataset contains 5,736 documents with 11 categories which include 3 parents categories.
+Here is three datasets which include WOS-11967 , WOS-46985, and WOS-5736 <br> 
+1) Web of Science Dataset WOS-11967 <br>
+ * This dataset contains 11,967 documents with 35 categories which include 7 parents categories.
+2) Web of Science Dataset WOS-46985 <br>
+ * This dataset contains 46,985 documents with 134 categories which include 7 parents categories.
+3) Web of Science Dataset WOS-5736 <br>
+ * This dataset contains 5,736 documents with 11 categories which include 3 parents categories.
 
 Originally use for hierarchical category.  <br><br>
 Data [source](https://data.mendeley.com/datasets/9rw3vkcfy4/6)
