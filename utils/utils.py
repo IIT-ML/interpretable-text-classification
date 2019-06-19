@@ -108,7 +108,8 @@ class ColoredWeightedDoc(object):
 
 def vectorize_keywords_docs(X_train_corpus, 
                             X_test_corpus, 
-                            keywordBank, 
+                            keywordBank=None, 
+                            return_cv=False
                             token_pattern=r"(?u)\b[\w\'/]+\b"):
     """ Vectorize the document input and the keyword input
     with respect to the keyword connotation
@@ -133,36 +134,41 @@ def vectorize_keywords_docs(X_train_corpus,
                                                             token_pattern=token_pattern,
                                                             lowercase=True,
                                                             binary=True)
-    key_cv = sklearn.feature_extraction.text.CountVectorizer(vocabulary=keywordBank.keyword,
-                                                            token_pattern=token_pattern,
-                                                            lowercase=True,
-                                                            binary=True)
     
     X_train = {}
     X_test = {}
     
     X_train['docs'] = doc_cv.fit_transform([' '.join(text) for text in X_train_corpus])
-    X_train['keys'] = key_cv.fit_transform([' '.join(text) for text in X_train_corpus])
     X_test['docs'] = doc_cv.transform([' '.join(text) for text in X_test_corpus])
-    X_test['keys'] = key_cv.transform([' '.join(text) for text in X_test_corpus])
     
-    # 1. Reverse the vocabulary lookup
-    # 2. Add connotation for keys
-    # CountVectorizer return {0,1} value.
-    # For each {1} in the element, we replace with the connotation value
-    key_index_lookup = dict([[v,k] for k,v in key_cv.vocabulary_.items()])
-            
-    tr_row_indices, tr_feat_indices = X_train['keys'].nonzero()
-    te_row_indices, te_feat_indices = X_test['keys'].nonzero()
+    if keywordBank is not None:
+        key_cv = sklearn.feature_extraction.text.CountVectorizer(vocabulary=keywordBank.keyword,
+                                                                token_pattern=token_pattern,
+                                                                lowercase=True,
+                                                                binary=True)
+        X_train['keys'] = key_cv.fit_transform([' '.join(text) for text in X_train_corpus])
+        X_test['keys'] = key_cv.transform([' '.join(text) for text in X_test_corpus])
     
-    # Since train and test could have different size of samples
-    # We iterate the data separately
-    for row, feat in zip(tr_row_indices, tr_feat_indices):
-        X_train['keys'][row, feat] = keywordBank.connotation[key_index_lookup[feat]]
-    for row, feat in zip(te_row_indices, te_feat_indices):
-        X_test['keys'][row, feat] = keywordBank.connotation[key_index_lookup[feat]]
+        # 1. Reverse the vocabulary lookup
+        # 2. Add connotation for keys
+        # CountVectorizer return {0,1} value.
+        # For each {1} in the element, we replace with the connotation value
+        key_index_lookup = dict([[v,k] for k,v in key_cv.vocabulary_.items()])
+
+        tr_row_indices, tr_feat_indices = X_train['keys'].nonzero()
+        te_row_indices, te_feat_indices = X_test['keys'].nonzero()
+
+        # Since train and test could have different size of samples
+        # We iterate the data separately
+        for row, feat in zip(tr_row_indices, tr_feat_indices):
+            X_train['keys'][row, feat] = keywordBank.connotation[key_index_lookup[feat]]
+        for row, feat in zip(te_row_indices, te_feat_indices):
+            X_test['keys'][row, feat] = keywordBank.connotation[key_index_lookup[feat]]
         
-    return X_train, X_test
+    if return_cv:
+        return X_train, X_test, doc_cv
+    else:
+        return X_train, X_test
 
 
 def plot_log(filename, show=True):
