@@ -65,7 +65,8 @@ class ColoredWeightedDoc(object):
                  doc, 
                  keyword, 
                  explanation_vector, 
-                 token_pattern=r"(?u)\b\w\w+\b", binary = False):
+                 token_pattern=r"(?u)\b\w\w+\b", 
+                 binary = False):
         self.doc = doc
         self.keyword = keyword
         self.explanation_vector = explanation_vector
@@ -109,7 +110,7 @@ class ColoredWeightedDoc(object):
 def vectorize_keywords_docs(X_train_corpus, 
                             X_test_corpus, 
                             keywordBank=None, 
-                            return_cv=False
+                            return_cv=False,
                             token_pattern=r"(?u)\b[\w\'/]+\b"):
     """ Vectorize the document input and the keyword input
     with respect to the keyword connotation
