@@ -1,4 +1,4 @@
-## PeerRead
+# PeerRead
 Data [source](https://github.com/allenai/PeerRead)
 
 
@@ -8,5 +8,8 @@ Data [source](https://github.com/allenai/PeerRead)
  |ICLR | 349     | 38    | 40    | None (all accepted) |
  |coNLL|19      | 2     | 1      | None (all accepted) |
  |arxiv.cs.ai | 3682    | 205   | 205| Accept/reject |
- |arxiv.cs.cl | 2374    | 132    | 132| Accept / reject |
- |arxiv.cs.lg | 4543    | 253     | 252| Accept / Reject |
+ |arxiv.cs.cl | 2374    | 132    | 132| Accept/reject |
+ |arxiv.cs.lg | 4543    | 253     | 252| Accept/Reject |
+
+Total training : 11090
+Total testing : 637
