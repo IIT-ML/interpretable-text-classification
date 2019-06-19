@@ -11,5 +11,5 @@ Data [source](https://github.com/allenai/PeerRead)
  |arxiv.cs.cl | 2374    | 132    | 132| Accept/reject |
  |arxiv.cs.lg | 4543    | 253     | 252| Accept/Reject |
 
-Total training : 11090
+Total training : 11090 <br>
 Total testing : 637
