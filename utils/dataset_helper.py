@@ -16,6 +16,7 @@ import os
 import logging
 import numpy as np
 import glob
+import pandas as pd
 from bs4 import BeautifulSoup
 from nltk.tokenize import word_tokenize
 
@@ -114,6 +115,56 @@ def load_imdb(path, shuffle=True, random_state=42, lower=False, tokenize=True):
         logging.info('Tokenized.')
         
     return X_train_corpus, y_train, X_test_corpus , y_test
+
+def load_ag_news(abs_path, 
+                 tokenize=True,
+                 lower=True,
+                 shuffle=True,
+                 random_state=42):
+    """
+    Load AG news with four categories
+    """
+    
+    train_path = os.path.join(abs_path, 'train.csv')
+    test_path = os.path.join(abs_path, 'test.csv')
+    
+    assert os.path.exists(abs_path), "AGnews path doesn\'t exists..."
+    
+    agnews_train_pd = pd.read_csv(train_path, header=None)
+    agnews_test_pd = pd.read_csv(test_path, header=None)
+    
+    X_train_corpus = agnews_train_pd[2].tolist()
+    X_train_corpus = [x.replace('\\', ' ') for x in X_train_corpus]
+    y_train = np.array(agnews_train_pd[0].values)
+ 
+    X_test_corpus = agnews_test_pd[2].tolist()
+    X_test_corpus = [x.replace('\\', ' ') for x in X_test_corpus]
+    y_test = np.array(agnews_test_pd[0].values)
+    
+    if shuffle:
+        np.random.seed(random_state)
+        indices = np.random.permutation(len(y_train))       
+        
+        X_train_corpus = [X_train_corpus[i] for i in indices]
+        y_train = y_train[indices]
+        
+        indices = np.random.permutation(len(y_test))
+        
+        X_test_corpus = [X_test_corpus[i] for i in indices]
+        y_test = y_test[indices]
+        logging.info('Shuffled.')
+    
+    if lower:
+        X_train_corpus = [text.lower() for text in X_train_corpus]
+        X_test_corpus = [text.lower() for text in X_test_corpus]
+        logging.info('Lowered.')
+        
+    if tokenize:
+        X_train_corpus = [word_tokenize(text) for text in X_train_corpus]
+        X_test_corpus = [word_tokenize(text) for text in X_test_corpus]
+        logging.info('Tokenized.')
+    
+    return X_train_corpus, X_test_corpus, y_train , y_test
 
 def load_peer_read(abs_path,
                    tokenize=True, 
