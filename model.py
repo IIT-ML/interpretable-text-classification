@@ -156,8 +156,8 @@ def train(model,
           lr,
           lr_decay,
           log_dir, 
-          weights_dir
-          train_mode="pre-trained-joint", 
+          weights_dir,
+          train_mode=3, 
           save_weights=True):
     """ Train Interpretable and Cautious Model
     
@@ -174,15 +174,15 @@ def train(model,
     
     # callbacks
     log = keras.callbacks.CSVLogger(os.path.join(log_dir, 'log-{}.csv'.format(train_mode)))
-    checkpoint = keras.callbacks.ModelCheckpoint(os.path.join(weights_dir, '{epoch:02d}-{val_loss:.3f}-{val_acc:.3f}'),
+    checkpoint = keras.callbacks.ModelCheckpoint(os.path.join(weights_dir, train_mode+'-{epoch:02d}-{val_loss:.3f}-{val_acc:.3f}.h5'),
                                                 monitor='val_acc',
                                                 save_best_only=True,
                                                 save_weights_only=True,
                                                 verbose=1)
     lr_decay = keras.callbacks.LearningRateScheduler(schedule=lambda epoch: lr * (lr_decay ** epoch))
     
-    if train_mode == "default-joint":
-        # Train the model altogether
+    if train_mode == 1:
+        # Train the model altogether {default-joint}
         model.final_model.fit([data['docs'], data['keys']],
                              label,
                              validation_split = (1./3),
@@ -191,7 +191,8 @@ def train(model,
                              epochs=epochs,
                              callbacks=[log, checkpoint, lr_decay])
         
-    elif train_mode == "pre-trained-frozen":
+    elif train_mode == 2:
+        # pre-trained frozen
         model.initial_model.fit(data['docs'],
                                label,
                                validation_split = (1./3),
@@ -210,7 +211,8 @@ def train(model,
                              epochs=epochs,
                              callbacks=[log, checkpoint, lr_decay])
         
-    elif train_mode == "pre-trained-joint":
+    elif train_mode == 3:
+        # ore-trained joint
         model.initial_model.fit(data['docs'],
                                label,
                                validation_split = (1./3),
@@ -309,7 +311,7 @@ if __name__ == "__main__":
                         help="If given, the operation will be operated in GPU")
     parser.add_argument('--dataset', default='imdb',
                         help="dataset. {'imdb', 'amazon_video', 'e-commerce'}. If path given, use the path")
-    parser.add_argument('--train-mode', default=1, type=int,
+    parser.add_argument('--train_mode', default=1, type=int,
                         help="1:default-joint, 2:pre-trained-frozen, 3:pre-trained-joint")
     parser.add_argument('--log_dir', default='./log', type=str,
                         help="dir to save log and summary")
@@ -341,7 +343,7 @@ if __name__ == "__main__":
         if os.path.exists(DATA_PATH) and os.path.exists(KEYWORD_PATH):
 
             keyword = utils.get_keyword(KEYWORD_PATH)
-            X_train_corpus, y_train, X_test_corpus, y_test = dataset_helper.load_imdb(IMDB_PATH, lower=True, tokenize=True)
+            X_train_corpus, y_train, X_test_corpus, y_test = dataset_helper.load_imdb(DATA_PATH, lower=True, tokenize=True)
 
             # 3. Create object to process keyword along with its connotation (keywordBank)
             keywordObj = KeywordBank(keyword=keyword, 
@@ -400,7 +402,7 @@ if __name__ == "__main__":
     
     if not args.testing:
         # train the model
-
+        
         model = InterpretableCautiousText(X_train['docs'].shape[1], len(keyword))
 
         m = train(model, X_train, 

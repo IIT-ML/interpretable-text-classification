@@ -198,7 +198,7 @@ def plot_log(filename, show=True):
         plt.show()
 
 def get_keyword(filepath):
-    if os.path.exist(filepath):
+    if os.path.exists(filepath):
         with open(filepath, 'r', encoding='utf-8') as keys:
             keyword = []
             for k in keys:
