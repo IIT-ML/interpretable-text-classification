@@ -13,12 +13,18 @@ Usage:
     
     
 Author: Anneke Hidayat, Mitchell Zhen, Mustafa Bilgic
+
+# TODO : separate model.py, test.py, train.py
 """
 
 import os
 import tensorflow as tf
 import keras
 import numpy as np
+import json
+import datetime
+from pytz import timezone
+
 from utils import utils, dataset_helper
 RAND_SEED = 42
 
@@ -325,9 +331,16 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', default=1, type=int)
     parser.add_argument('--lr', default=0.001, type=float)
     parser.add_argument('--lr_decay', default=0.9, type=float)
+    parser.add_argument('--model_path', default='./models/{}'.format(datetime.datetime.now(timezone('US/Central')).strftime("%y%m%d-%H%M%S")), type=str,
+                       help="Path to save model")
 
+    
     args = parser.parse_args()
     # print(args)
+    
+    config = {}
+    config['args'] = vars(args)
+    conf['start_time'] = datetime.datetime.now(timezone('US/Central')).strftime("%y-%m-%d_%H:%M:%S")
     
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES']='-1'
