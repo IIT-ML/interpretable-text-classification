@@ -164,7 +164,8 @@ def train(model,
           log_dir, 
           weights_dir,
           train_mode=3, 
-          save_weights=True):
+          save_weights=True,
+         return_callbacks=Trues):
     """ Train Interpretable and Cautious Model
     
     Helper to train it in a different fashion
@@ -179,12 +180,13 @@ def train(model,
     """
     
     # callbacks
-    log = keras.callbacks.CSVLogger(os.path.join(log_dir, 'log-{}.csv'.format(train_mode)))
-    checkpoint = keras.callbacks.ModelCheckpoint(os.path.join(weights_dir, train_mode+'-{epoch:02d}-{val_loss:.3f}-{val_acc:.3f}.h5'),
-                                                monitor='val_acc',
-                                                save_best_only=True,
-                                                save_weights_only=True,
-                                                verbose=1)
+    if return_callbacks:
+        log = keras.callbacks.CSVLogger(os.path.join(log_dir, 'log-{}.csv'.format(train_mode)))
+        checkpoint = keras.callbacks.ModelCheckpoint(os.path.join(weights_dir, train_mode+'-{epoch:02d}-{val_loss:.3f}-{val_acc:.3f}.h5'),
+                                                    monitor='val_acc',
+                                                    save_best_only=True,
+                                                    save_weights_only=True,
+                                                    verbose=1)
     lr_decay = keras.callbacks.LearningRateScheduler(schedule=lambda epoch: lr * (lr_decay ** epoch))
     
     if train_mode == 1:
@@ -368,46 +370,6 @@ if __name__ == "__main__":
             X_train, X_test = utils.vectorize_keywords_docs(X_train_corpus, X_test_corpus, keywordObj)
         else:
             raise ValueError('Path doesn\'t exist. Please check the availability of your data')
-    elif args.dataset.lower() == 'amazon':
-        DATA_PATH = './dataset/reviews_Amazon_Instant_Video_5.json'
-        KEYWORD_PATH = './data/amazon-video-unigrams-more.txt'
-
-        if os.path.exists(DATA_PATH) and os.path.exists(KEYWORD_PATH):
-
-            keyword = utils.get_keyword(KEYWORD_PATH)
-            # X_train_corpus, y_train, X_test_corpus, y_test = dataset_helper.load_imdb(IMDB_PATH, lower=True, tokenize=True)
-
-            # 3. Create object to process keyword along with its connotation (keywordBank)
-            keywordObj = KeywordBank(keyword=keyword, 
-                                    xtrain=X_train_corpus, 
-                                    ytrain=y_train)
-            keywordObj.get_connotation()
-
-            # 4. Vectorize document and keyword for model input(s)
-            X_train, X_test = utils.vectorize_keywords_docs(X_train_corpus, X_test_corpus, keywordObj)
-        else:
-            raise ValueError('Path doesn\'t exist. Please check the availability of your data')
-        
-    elif args.dataset.lower() == 'e-commerce':
-        DATA_PATH = './dataset/womens-ecommerce-clothing-reviews/Womens_Clothing_E-Commerce_Reviews.csv'
-        KEYWORD_PATH ='./data/ecom-unigrams.txt'
-
-        if os.path.exists(DATA_PATH) and os.path.exists(KEYWORD_PATH):
-
-            keyword = utils.get_keyword(KEYWORD_PATH)
-            # X_train_corpus, y_train, X_test_corpus, y_test = dataset_helper.load_imdb(IMDB_PATH, lower=True, tokenize=True)
-
-            # 3. Create object to process keyword along with its connotation (keywordBank)
-            keywordObj = KeywordBank(keyword=keyword, 
-                                    xtrain=X_train_corpus, 
-                                    ytrain=y_train)
-            keywordObj.get_connotation()
-
-            # 4. Vectorize document and keyword for model input(s)
-            X_train, X_test = utils.vectorize_keywords_docs(X_train_corpus, X_test_corpus, keywordObj)
-        else:
-            raise ValueError('Path doesn\'t exist. Please check the availability of your data')
-
     else:
         # TODO: add if there is any directory to new dataset.
         pass
