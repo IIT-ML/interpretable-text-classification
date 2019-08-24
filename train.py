@@ -187,7 +187,7 @@ def train(model,
                                                     save_best_only=True,
                                                     save_weights_only=True,
                                                     verbose=1)
-    lr_decay = keras.callbacks.LearningRateScheduler(schedule=lambda epoch: lr * (lr_decay ** epoch))
+        lr_decay = keras.callbacks.LearningRateScheduler(schedule=lambda epoch: lr * (lr_decay ** epoch))
     
     if train_mode == 1:
         # Train the model altogether {default-joint}
@@ -323,7 +323,7 @@ if __name__ == "__main__":
                         help="1:default-joint, 2:pre-trained-frozen, 3:pre-trained-joint")
     parser.add_argument('--log_dir', default='./log', type=str,
                         help="dir to save log and summary")
-    parser.add_argument('--weight_dir', default='./weights', type=str,
+    parser.add_argument('--weight_dir', default='/home/anneke/Documents/models/text-classification', type=str,
                         help="dir to save weight")    
     parser.add_argument('--w', '--weights', default=None,
                         help="The path of the saved weights. Specified when testing")
@@ -342,19 +342,19 @@ if __name__ == "__main__":
     
     config = {}
     config['args'] = vars(args)
-    conf['start_time'] = datetime.datetime.now(timezone('US/Central')).strftime("%y-%m-%d_%H:%M:%S")
+    config['start_time'] = datetime.datetime.now(timezone('US/Central')).strftime("%y-%m-%d_%H:%M:%S")
     
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES']='-1'
     else:
         os.environ['CUDA_VISIBLE_DEVICES']=''
-
+ 
     if args.dataset.lower() == 'imdb':
         # 1. Load keyword from txt file
         # 2. Load dataset
         DATA_PATH = './dataset/aclImdb'
         KEYWORD_PATH = './data/imdb-unigrams.txt'
-
+        
         if os.path.exists(DATA_PATH) and os.path.exists(KEYWORD_PATH):
 
             keyword = utils.get_keyword(KEYWORD_PATH)
@@ -379,7 +379,7 @@ if __name__ == "__main__":
         # train the model
         
         model = InterpretableCautiousText(X_train['docs'].shape[1], len(keyword))
-
+        
         m = train(model, X_train, 
                 y_train, 
                 args.epochs, 
@@ -388,8 +388,11 @@ if __name__ == "__main__":
                 args.lr_decay, 
                 args.log_dir, 
                 args.weight_dir,
-                args.train_mode)                           
-
+                args.train_mode)
+        
+        config['end_time'] = datetime.datetime.now(timezone('US/Central')).strftime("%y-%m-%d_%H:%M:%S")
+        with open('data.json', 'w') as outfile:
+            json.dump(config, outfile)
     else:
         # load weights
         pre_trained_weight = args.weights
