@@ -114,7 +114,7 @@ def load_imdb(path, shuffle=True, random_state=42, lower=False, tokenize=True):
         X_test_corpus = [word_tokenize(text) for text in X_test_corpus]
         logging.info('Tokenized.')
         
-    return X_train_corpus, y_train, X_test_corpus , y_test
+    return X_train_corpus, y_train, X_test_corpus, y_test
 
 def load_ag_news(abs_path, 
                  tokenize=True,
@@ -136,7 +136,7 @@ def load_ag_news(abs_path,
     X_train_corpus = agnews_train_pd[2].tolist()
     X_train_corpus = [x.replace('\\', ' ') for x in X_train_corpus]
     y_train = np.array(agnews_train_pd[0].values)
- 
+    
     X_test_corpus = agnews_test_pd[2].tolist()
     X_test_corpus = [x.replace('\\', ' ') for x in X_test_corpus]
     y_test = np.array(agnews_test_pd[0].values)
@@ -164,7 +164,7 @@ def load_ag_news(abs_path,
         X_test_corpus = [word_tokenize(text) for text in X_test_corpus]
         logging.info('Tokenized.')
     
-    return X_train_corpus, X_test_corpus, y_train , y_test
+    return X_train_corpus, X_test_corpus, y_train, y_test
 
 # TODO
 def load_arxiv(abs_path,
