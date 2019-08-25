@@ -166,6 +166,17 @@ def load_ag_news(abs_path,
     
     return X_train_corpus, X_test_corpus, y_train , y_test
 
+# TODO
+def load_arxiv(abs_path,
+              tokenize=True,
+              lower=True,
+              shuffle=True,
+              random_state=42):
+    
+    # read the data as parquet
+    # don't forget to handle the label
+    pass
+
 def load_peer_read(abs_path,
                    tokenize=True, 
                    lower=True, 

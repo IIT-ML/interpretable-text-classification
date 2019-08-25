@@ -125,16 +125,16 @@ def vectorize_keywords_docs(X_train_corpus,
         doc_vec: document binary bag-of-words
         key_vec: keyword bag-of words with connotation
     """
-    import sklearn
+    from sklearn.feature_extraction.text import CountVectorizer
     
     # For simplicity of the model, we only extract feature with appearance of
     # 100 in the whole training corpus
     MIN_FREQ = 100
     
-    doc_cv = sklearn.feature_extraction.text.CountVectorizer(min_df=MIN_FREQ,
-                                                            token_pattern=token_pattern,
-                                                            lowercase=True,
-                                                            binary=True)
+    doc_cv = CountVectorizer(min_df=MIN_FREQ,
+                            token_pattern=token_pattern,
+                            lowercase=True,
+                            binary=True)
     
     X_train = {}
     X_test = {}
@@ -143,7 +143,7 @@ def vectorize_keywords_docs(X_train_corpus,
     X_test['docs'] = doc_cv.transform([' '.join(text) for text in X_test_corpus])
     
     if keywordBank is not None:
-        key_cv = sklearn.feature_extraction.text.CountVectorizer(vocabulary=keywordBank.keyword,
+        key_cv = CountVectorizer(vocabulary=keywordBank.keyword,
                                                                 token_pattern=token_pattern,
                                                                 lowercase=True,
                                                                 binary=True)
