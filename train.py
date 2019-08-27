@@ -165,7 +165,7 @@ def train(model,
           weights_dir,
           train_mode=3, 
           save_weights=True,
-         return_callbacks=Trues):
+         return_callbacks=True):
     """ Train Interpretable and Cautious Model
     
     Helper to train it in a different fashion
@@ -181,13 +181,17 @@ def train(model,
     
     # callbacks
     if return_callbacks:
-        log = keras.callbacks.CSVLogger(os.path.join(log_dir, 'log-{}.csv'.format(train_mode)))
-        checkpoint = keras.callbacks.ModelCheckpoint(os.path.join(weights_dir, train_mode+'-{epoch:02d}-{val_loss:.3f}-{val_acc:.3f}.h5'),
-                                                    monitor='val_acc',
+        #log = keras.callbacks.CSVLogger(os.path.join(log_dir, 'log-{}.csv'.format(train_mode)))
+        checkpoint = keras.callbacks.ModelCheckpoint(os.path.join(weights_dir, '{epoch:03d}-{val_loss:.3f}-{val_acc:.3f}.h5'),
+                                                    monitor='val_loss',
+                                                    mode='min',
                                                     save_best_only=True,
                                                     save_weights_only=True,
                                                     verbose=1)
         lr_decay = keras.callbacks.LearningRateScheduler(schedule=lambda epoch: lr * (lr_decay ** epoch))
+        callbacks = [checkpoint, lr_decay]
+    else:
+        callbacks = None
     
     if train_mode == 1:
         # Train the model altogether {default-joint}
@@ -197,7 +201,7 @@ def train(model,
                              shuffle=True,
                              batch_size=batch_size,
                              epochs=epochs,
-                             callbacks=[log, checkpoint, lr_decay])
+                             callbacks=callbacks)
         
     elif train_mode == 2:
         # pre-trained frozen
@@ -217,7 +221,7 @@ def train(model,
                              shuffle=True,
                              batch_size=batch_size,
                              epochs=epochs,
-                             callbacks=[log, checkpoint, lr_decay])
+                             callbacks=callbacks)
         
     elif train_mode == 3:
         # ore-trained joint
@@ -237,16 +241,16 @@ def train(model,
                              shuffle=True,
                              batch_size=batch_size,
                              epochs=epochs,
-                             callbacks=[log, checkpoint, lr_decay])
+                             callbacks=callbacks)
     else:
         raise ValueError('train_mode is not recognized..')
     
     if save_weights:
         model.final_model.save_weights(os.path.join(weights_dir, '{}-trained-model.h5'.format(train_mode)))
         
-    if epochs > 1:
-        from utils import plot_log
-        plot_log(os.path.join(LOG_DIR, 'log-{}.csv'.format(train_mode)), 
+    #if epochs > 1:
+    #    from utils import plot_log
+    #    plot_log(os.path.join(LOG_DIR, 'log-{}.csv'.format(train_mode)),
                  show=True)
     
     return model
@@ -315,27 +319,50 @@ if __name__ == "__main__":
 
     # setting the hyper parameters
     parser = argparse.ArgumentParser(description="Interpretable Cautious Text Classifier args")
-    parser.add_argument('--gpu', action='store_true',
+    parser.add_argument('--gpu', 
+                        action='store_true',
                         help="If given, the operation will be operated in GPU")
-    parser.add_argument('--dataset', default='imdb',
-                        help="dataset. {'imdb', 'amazon_video', 'e-commerce'}. If path given, use the path")
-    parser.add_argument('--train_mode', default=1, type=int,
+    
+    #### For temporary, the amazon_video and e_commerce won't be available
+    parser.add_argument('--dataset', 
+                        default='imdb',
+                        help="dataset. {'imdb', 'arxiv', 'agnews'}. If path given, use the path")
+    parser.add_argument('--train_mode', 
+                        default=1, 
+                        type=int,
                         help="1:default-joint, 2:pre-trained-frozen, 3:pre-trained-joint")
-    parser.add_argument('--log_dir', default='./log', type=str,
-                        help="dir to save log and summary")
-    parser.add_argument('--weight_dir', default='/home/anneke/Documents/models/text-classification', type=str,
-                        help="dir to save weight")    
-    parser.add_argument('--w', '--weights', default=None,
+    
+    #### Let's make the directory placement automatic
+    parser.add_argument('--log_dir', 
+                        default='./log', 
+                        type=str,
+                        help="dir to save log and summary")   
+    parser.add_argument('-w', '--weights', 
+                        default=None,
                         help="The path of the saved weights. Specified when testing")
-    parser.add_argument('-t', '--testing', action='store_true',
+    parser.add_argument('-t', '--testing', 
+                        action='store_true',
                         help="test data with the given model path")
-    parser.add_argument('--epochs', default=1, type=int)
-    parser.add_argument('--batch_size', default=1, type=int)
-    parser.add_argument('--lr', default=0.001, type=float)
-    parser.add_argument('--lr_decay', default=0.9, type=float)
-    parser.add_argument('--model_path', default='./models/{}'.format(datetime.datetime.now(timezone('US/Central')).strftime("%y%m%d-%H%M%S")), type=str,
-                       help="Path to save model")
-
+    parser.add_argument('--epochs', 
+                        default=1, 
+                        type=int)
+    parser.add_argument('--batch_size', 
+                        default=1, 
+                        type=int)
+    parser.add_argument('--lr', 
+                        default=0.001, 
+                        type=float)
+    parser.add_argument('--lr_decay', 
+                        default=0.9, 
+                        type=float)
+    parser.add_argument('--parent_dir', 
+                        default='/home/anneke/Documents/models/', 
+                        type=str,
+                        help="Path to save model")
+    parser.add_argument('--word_len',
+                        default='100',
+                        type=str)
+    
     
     args = parser.parse_args()
     # print(args)
@@ -343,52 +370,78 @@ if __name__ == "__main__":
     config = {}
     config['args'] = vars(args)
     config['start_time'] = datetime.datetime.now(timezone('US/Central')).strftime("%y-%m-%d_%H:%M:%S")
+    config['data_summary'] = {}
     
+    #format(datetime.datetime.now(timezone('US/Central')).strftime("%y%m%d_%H%M%S"))
+    
+    # GPU placement
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES']='-1'
     else:
         os.environ['CUDA_VISIBLE_DEVICES']=''
  
+    # Load dataset
     if args.dataset.lower() == 'imdb':
         # 1. Load keyword from txt file
         # 2. Load dataset
         DATA_PATH = './dataset/aclImdb'
-        KEYWORD_PATH = './data/imdb-unigrams.txt'
+        KEYWORD_PATH = './data/data/imdb-keywords/imdb_keywords.json'
         
         if os.path.exists(DATA_PATH) and os.path.exists(KEYWORD_PATH):
-
-            keyword = utils.get_keyword(KEYWORD_PATH)
-            X_train_corpus, y_train, X_test_corpus, y_test = dataset_helper.load_imdb(DATA_PATH, lower=True, tokenize=True)
+            
+            #keyword = utils.get_keyword(KEYWORD_PATH)
+            keyword = json.load(open(KEYWORD_PATH, 'r'))
+            X_train_corpus, y_train, X_test_corpus, y_test = dataset_helper.load_imdb(DATA_PATH, 
+                                                                                      lower=True, 
+                                                                                      tokenize=True)
 
             # 3. Create object to process keyword along with its connotation (keywordBank)
             keywordObj = KeywordBank(keyword=keyword, 
                                     xtrain=X_train_corpus, 
                                     ytrain=y_train)
-            keywordObj.get_connotation()
+            keywordObj.assign_connotation()
 
             # 4. Vectorize document and keyword for model input(s)
-            X_train, X_test = utils.vectorize_keywords_docs(X_train_corpus, X_test_corpus, keywordObj)
+            X_train, X_test = utils.vectorize_keywords_docs(X_train_corpus, 
+                                                            X_test_corpus, 
+                                                            keywordObj)
+            
+            config['data_summary']['keyword'] = keyword[args.word_len]['summary']
+            config['data_summary']['data'] = {'train':len(X_train['docs']), 
+                                              'test':len(X_test['docs'])}
         else:
             raise ValueError('Path doesn\'t exist. Please check the availability of your data')
     else:
         # TODO: add if there is any directory to new dataset.
         pass
     
-    
+    # Train / test
     if not args.testing:
-        # train the model
+        directory = 'int-{}-{}-{}-{}'.format(args.dataset, 
+                                             args.train_mode,
+                                             args.word_len,
+                                             config['start_time'])
+    
+        w_dir = 'weights/{}'.format(directory)
+        l_dir = 'log_dir/{}'.format(directory)
         
-        model = InterpretableCautiousText(X_train['docs'].shape[1], len(keyword))
+        if not os.path.exists(os.path.join(args.parent_dir, w_dir)):
+            os.mkdir(os.path.join(args.parent_dir, w_dir))
+        if not os.path.exists(os.path.join(args.parent_dir, l_dir)):
+            os.mkdir(os.path.join(args.parent_dir, l_dir))
+
         
-        m = train(model, X_train, 
-                y_train, 
-                args.epochs, 
-                args.batch_size, 
-                args.lr, 
-                args.lr_decay, 
-                args.log_dir, 
-                args.weight_dir,
-                args.train_mode)
+        model = InterpretableCautiousText(X_train['docs'].shape[1], len(keywordObj.connotation))
+        
+        m = train(model, X_train,
+                  y_train,
+                  args.epochs,
+                  args.batch_size,
+                  args.lr,
+                  args.lr_decay, 
+                  l_dir, 
+                  w_dir,
+                  args.train_mode)
         
         config['end_time'] = datetime.datetime.now(timezone('US/Central')).strftime("%y-%m-%d_%H:%M:%S")
         with open('data.json', 'w') as outfile:

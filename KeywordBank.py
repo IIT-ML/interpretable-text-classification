@@ -36,17 +36,41 @@ class KeywordBank():
         if connotation is not None:
             self.connotation = connotation
         else:
-            self.connotation = None
+            self.connotation = {}
         
-        if isinstance(xtrain, list):
+        if isinstance(keyword, list):
+            if isinstance(xtrain, list):
+                self.xtrain = xtrain
+                self.ytrain = ytrain
+            else:
+                raise ValueError('Need reference data...')
+        else:
             self.xtrain = xtrain
             self.ytrain = ytrain
-        else:
-            raise ValueError('Need reference data...')
-        
-    def get_connotation(self):
-        """ Calculate sentiment score
-        Use training data only. Calculate as follow :
+    
+    def assign_connotation(self, words_len='100', class_label=['neg', 'pos']):
+        """
+            Use this function only to generate connotation dictionary
+            from the given dictionary
+            
+            # Arguments
+            words_length    str
+                            {'100', '200', '300'}
+            class_label     class index for each dataset. 
+                            It has to map between classes in the keyword file
+        """
+        # make sure the keywords are dictionary
+        # all the words are belongs to binary classes
+            
+        for c in class_label:
+            for w in self.keyword[words_len][c]:
+                self.connotation[w] = 1 if class_label.index(c) == 1 else -1
+    
+    def generate_connotation(self):
+        """ We may use this function only if we don't have any connotation given
+            as an input. 
+            Calculate sentiment score
+            Use training data only. Calculate as follow :
             if f_{+}(keyword) > f_{-}(keyword):
                 +1
             else:
