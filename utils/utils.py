@@ -15,11 +15,13 @@ Author: Anneke Hidayat, Mitchell Zhen, Mustafa Bilgic
 import os
 import errno
 import numpy as np
-from matplotlib import pyplot as plt
+# import matplotlib
+# from matplotlib import pyplot as plt
 import csv
 import pandas
 
-plt.style.use("seaborn")
+# matplotlib.use('Agg')
+# plt.style.use("seaborn")
 
 import re
 
@@ -143,10 +145,10 @@ def vectorize_keywords_docs(X_train_corpus,
     X_test['docs'] = doc_cv.transform([' '.join(text) for text in X_test_corpus])
     
     if keywordBank is not None:
-        key_cv = CountVectorizer(vocabulary=keywordBank.keyword,
-                                                                token_pattern=token_pattern,
-                                                                lowercase=True,
-                                                                binary=True)
+        key_cv = CountVectorizer(vocabulary=sorted(list(keywordBank.connotation.keys())),
+                                 token_pattern=token_pattern,
+                                 lowercase=True,
+                                 binary=True)
         X_train['keys'] = key_cv.fit_transform([' '.join(text) for text in X_train_corpus])
         X_test['keys'] = key_cv.transform([' '.join(text) for text in X_test_corpus])
     
@@ -172,30 +174,30 @@ def vectorize_keywords_docs(X_train_corpus,
         return X_train, X_test
 
 
-def plot_log(filename, show=True):
-    # Taken from https://github.com/XifengGuo/CapsNet-Keras/blob/master/utils.py
+# def plot_log(filename, show=True):
+#     # Taken from https://github.com/XifengGuo/CapsNet-Keras/blob/master/utils.py
     
-    data = pandas.read_csv(filename)
+#     data = pandas.read_csv(filename)
 
-    fig = plt.figure(figsize=(4,6))
-    fig.subplots_adjust(top=0.95, bottom=0.05, right=0.95)
-    fig.add_subplot(211)
-    for key in data.keys():
-        if key.find('loss') >= 0 and not key.find('val') >= 0:  # training loss
-            plt.plot(data['epoch'].values, data[key].values, label=key)
-    plt.legend()
-    plt.title('Training loss')
+#     fig = plt.figure(figsize=(4,6))
+#     fig.subplots_adjust(top=0.95, bottom=0.05, right=0.95)
+#     fig.add_subplot(211)
+#     for key in data.keys():
+#         if key.find('loss') >= 0 and not key.find('val') >= 0:  # training loss
+#             plt.plot(data['epoch'].values, data[key].values, label=key)
+#     plt.legend()
+#     plt.title('Training loss')
 
-    fig.add_subplot(212)
-    for key in data.keys():
-        if key.find('acc') >= 0:  # acc
-            plt.plot(data['epoch'].values, data[key].values, label=key)
-    plt.legend()
-    plt.title('Training and validation accuracy')
+#     fig.add_subplot(212)
+#     for key in data.keys():
+#         if key.find('acc') >= 0:  # acc
+#             plt.plot(data['epoch'].values, data[key].values, label=key)
+#     plt.legend()
+#     plt.title('Training and validation accuracy')
 
-    # fig.savefig('result/log.png')
-    if show:
-        plt.show()
+#     # fig.savefig('result/log.png')
+#     if show:
+#         plt.show()
 
 def get_keyword(filepath):
     if os.path.exists(filepath):

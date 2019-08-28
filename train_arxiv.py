@@ -22,10 +22,13 @@ import tensorflow as tf
 import keras
 import numpy as np
 import json
+import glob
 import datetime
+import pandas as pd
 from pytz import timezone
 
 from utils import utils, dataset_helper
+from KeywordBank import KeywordBank
 RAND_SEED = 42
 
 class InterpretableCautiousText():
@@ -181,6 +184,7 @@ def train(model,
     
     # callbacks
     if return_callbacks:
+        early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=100)
         #log = keras.callbacks.CSVLogger(os.path.join(log_dir, 'log-{}.csv'.format(train_mode)))
         checkpoint = keras.callbacks.ModelCheckpoint(os.path.join(weights_dir, '{epoch:03d}-{val_loss:.3f}-{val_acc:.3f}.h5'),
                                                     monitor='val_loss',
@@ -188,8 +192,8 @@ def train(model,
                                                     save_best_only=True,
                                                     save_weights_only=True,
                                                     verbose=1)
-        lr_decay = keras.callbacks.LearningRateScheduler(schedule=lambda epoch: lr * (lr_decay ** epoch))
-        callbacks = [checkpoint, lr_decay]
+        #lr_decay = keras.callbacks.LearningRateScheduler(schedule=lambda epoch: lr * (lr_decay ** float(epoch)))
+        callbacks = [early_stop, checkpoint]
     else:
         callbacks = None
     
@@ -210,7 +214,7 @@ def train(model,
                                validation_split = (1./3),
                                shuffle=True,
                                batch_size=batch_size,
-                               epochs=epochs)
+                               epochs=1)
         
         # Froze the initial model's weights
         model.initial_model.trainable=False
@@ -230,7 +234,7 @@ def train(model,
                                validation_split = (1./3),
                                shuffle=True,
                                batch_size=batch_size,
-                               epochs=epochs)
+                               epochs=1)
         
         # Make it trainable when it trained the final model
         model.initial_model.trainable=True
@@ -245,13 +249,13 @@ def train(model,
     else:
         raise ValueError('train_mode is not recognized..')
     
-    if save_weights:
-        model.final_model.save_weights(os.path.join(weights_dir, '{}-trained-model.h5'.format(train_mode)))
+    #if save_weights:
+    #    model.final_model.save_weights(os.path.join(weights_dir, '{}-trained-model.h5'.format(train_mode)))
         
     #if epochs > 1:
     #    from utils import plot_log
     #    plot_log(os.path.join(LOG_DIR, 'log-{}.csv'.format(train_mode)),
-                 show=True)
+    #             show=True)
     
     return model
 
@@ -304,8 +308,13 @@ def test(model,
     if label is None:
         return report, preds, explanation_vec
     else:
-        eval_result = md.evaluate([data['docs'][doc_YES_exp_indices], data['keys'][doc_YES_exp_indices]],
-                                    label[doc_YES_exp_indices])
+        
+        if not isinstance(label, list)or not isinstance(label, np.array):
+            eval_result = md.evaluate([data['docs'][doc_YES_exp_indices], data['keys'][doc_YES_exp_indices]],
+                                       label.iloc[doc_YES_exp_indices]['categories'])
+        else:
+            eval_result = md.evaluate([data['docs'][doc_YES_exp_indices], data['keys'][doc_YES_exp_indices]],
+                                        label[doc_YES_exp_indices])
         
         report['loss'] = np.around(eval_result[0], 3)
         report['acc'] = np.around(eval_result[1], 3)
@@ -376,21 +385,27 @@ if __name__ == "__main__":
     
     # GPU placement
     if args.gpu:
-        os.environ['CUDA_VISIBLE_DEVICES']='-1'
+        os.environ['CUDA_VISIBLE_DEVICES']='0'
     else:
         os.environ['CUDA_VISIBLE_DEVICES']=''
+        
+   
  
     # Load dataset
     if args.dataset.lower() == 'imdb':
         # 1. Load keyword from txt file
         # 2. Load dataset
         DATA_PATH = './dataset/aclImdb'
-        KEYWORD_PATH = './data/data/imdb-keywords/imdb_keywords.json'
+        KEYWORD_PATH = './data/imdb-keywords/imdb_keywords.json'
+        
+        print('{}: Load dataset'.format(config['start_time']))
         
         if os.path.exists(DATA_PATH) and os.path.exists(KEYWORD_PATH):
             
             #keyword = utils.get_keyword(KEYWORD_PATH)
             keyword = json.load(open(KEYWORD_PATH, 'r'))
+            
+            print('Loading...')
             X_train_corpus, y_train, X_test_corpus, y_test = dataset_helper.load_imdb(DATA_PATH, 
                                                                                       lower=True, 
                                                                                       tokenize=True)
@@ -399,27 +414,94 @@ if __name__ == "__main__":
             keywordObj = KeywordBank(keyword=keyword, 
                                     xtrain=X_train_corpus, 
                                     ytrain=y_train)
-            keywordObj.assign_connotation()
+            keywordObj.assign_connotation(words_len=args.word_len, class_label=['neg', 'pos'])
 
+            print('Vectorize...')
             # 4. Vectorize document and keyword for model input(s)
             X_train, X_test = utils.vectorize_keywords_docs(X_train_corpus, 
                                                             X_test_corpus, 
                                                             keywordObj)
             
             config['data_summary']['keyword'] = keyword[args.word_len]['summary']
-            config['data_summary']['data'] = {'train':len(X_train['docs']), 
-                                              'test':len(X_test['docs'])}
+            config['data_summary']['data'] = {'train':len(y_train), 
+                                              'test':len(y_test)}
+        else:
+            raise ValueError('Path doesn\'t exist. Please check the availability of your data')
+    elif args.dataset.lower() == 'arxiv':
+        DATA_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/dataset/arxiv_ai_crypto_data.parquet'
+        KEYWORD_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/data/arxiv-aicrypto-keywords/arxiv_keywords.json'
+        
+        print('{}: Load dataset'.format(config['start_time']))
+        
+        if os.path.exists(DATA_PATH) and os.path.exists(KEYWORD_PATH):
+            keyword = json.load(open(KEYWORD_PATH, 'r'))
+            
+            print('Loading...')
+            
+            X_ = pd.read_parquet(DATA_PATH)
+            
+            def apply_categories(data, labels=['cs.ai', 'cs.cr']):
+                '''
+                    Need to make sure that there is no overlap between these categories first!
+                '''
+
+                for l in labels:
+                    if l in data.split(' '):
+                        return l
+
+            X_['categories'] = X_['categories'].apply(apply_categories)
+            
+            
+            from sklearn.model_selection import train_test_split
+            print('train, test, split')
+            X_train, X_test, y_train, y_test = train_test_split(X_['abstract'], 
+                                                                X_['categories'], 
+                                                                test_size=(1./3), 
+                                                                random_state=42)
+            del X_
+            X_train = list(X_train)
+            X_test = list(X_test)
+            
+            from nltk.tokenize import word_tokenize
+            print('Tokenize...')
+            X_train = [word_tokenize(text) for text in X_train]
+            X_test = [word_tokenize(text) for text in X_test]
+            
+            to_binary = {'cs.ai':1, 'cs.cr':0}
+            y_train = y_train.apply(lambda x: to_binary[x])
+            y_test = y_test.apply(lambda x: to_binary[x])
+            
+            keywordObj = KeywordBank(keyword=keyword, 
+                                     xtrain=X_train, 
+                                     ytrain=y_train)
+            keywordObj.assign_connotation(words_len=args.word_len, class_label=['crypto', 'ai'])
+            
+            print('vectorize...')
+            X_train, X_test = utils.vectorize_keywords_docs(X_train, 
+                                                            X_test, 
+                                                            keywordObj)
+            config['data_summary']['keyword'] = keyword[args.word_len]['summary']
+            config['data_summary']['data'] = {'train':len(y_train), 
+                                              'test':len(y_test)}
         else:
             raise ValueError('Path doesn\'t exist. Please check the availability of your data')
     else:
+        
         # TODO: add if there is any directory to new dataset.
         pass
     
     # Train / test
+    
+    
+    
     if not args.testing:
-        directory = 'int-{}-{}-{}-{}'.format(args.dataset, 
+        print('Training....')
+        
+        directory = 'int-{}-{}-{}-{}-{}-{}'.format(args.dataset, 
                                              args.train_mode,
                                              args.word_len,
+                                             args.epochs,
+                                             args.batch_size,
                                              config['start_time'])
     
         w_dir = 'weights/{}'.format(directory)
@@ -439,21 +521,43 @@ if __name__ == "__main__":
                   args.batch_size,
                   args.lr,
                   args.lr_decay, 
-                  l_dir, 
-                  w_dir,
+                  os.path.join(args.parent_dir, l_dir), 
+                  os.path.join(args.parent_dir, w_dir),
                   args.train_mode)
         
         config['end_time'] = datetime.datetime.now(timezone('US/Central')).strftime("%y-%m-%d_%H:%M:%S")
-        with open('data.json', 'w') as outfile:
-            json.dump(config, outfile)
+        
+        best_model = sorted(glob.glob(os.path.join(args.parent_dir, w_dir)+"/*.h5"))[-1]
+        
+        print(best_model)
+        m.final_model.load_weights(best_model)
+        
+        report, preds, exp_vec = test(m,
+                                      X_test,
+                                      label=y_test)
+        
+        config['report'] = report
+        config['keyword_list'] = sorted(list(keywordObj.connotation.keys()))
+        with open('{}/CONFIG'.format(os.path.join(args.parent_dir, w_dir)), 'w') as outfile:
+            json.dump(config, outfile, indent=4)
+           
+        l = [v for v in exp_vec]
+        df = pd.DataFrame({'label': y_test,
+                           'preds': preds,
+                           'explanation':l})
+        
+        df.to_parquet('{}/test.parquet'.format(os.path.join(args.parent_dir, w_dir)))
+        print('Finish.....')
     else:
         # load weights
         pre_trained_weight = args.weights
 
-
         report, preds, exp_vec = test(m,
                               X_test, 
                               label=y_test)
+        
+        #TODO: Create file. Let's create on df. since we have exp_vec. 
+        #label, preds, exp_vec
         print(report)
 
         
