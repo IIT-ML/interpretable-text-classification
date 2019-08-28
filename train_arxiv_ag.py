@@ -29,6 +29,8 @@ from pytz import timezone
 
 from utils import utils, dataset_helper
 from KeywordBank import KeywordBank
+from nltk.tokenize import word_tokenize
+from utils.dataset_helper import load_ag_news
 RAND_SEED = 42
 
 class InterpretableCautiousText():
@@ -308,13 +310,15 @@ def test(model,
     if label is None:
         return report, preds, explanation_vec
     else:
-        
-        if not isinstance(label, list)or not isinstance(label, np.array):
+        if isinstance(label, pd.DataFrame):
             eval_result = md.evaluate([data['docs'][doc_YES_exp_indices], data['keys'][doc_YES_exp_indices]],
                                        label.iloc[doc_YES_exp_indices].get_values())
         else:
+            if isinstance(label, list):
+                lable = np.array(label)
+            
             eval_result = md.evaluate([data['docs'][doc_YES_exp_indices], data['keys'][doc_YES_exp_indices]],
-                                        label[doc_YES_exp_indices])
+                                       label[doc_YES_exp_indices])
         
         report['loss'] = np.around(eval_result[0], 3)
         report['acc'] = np.around(eval_result[1], 3)
@@ -414,7 +418,8 @@ if __name__ == "__main__":
             keywordObj = KeywordBank(keyword=keyword, 
                                     xtrain=X_train_corpus, 
                                     ytrain=y_train)
-            keywordObj.assign_connotation(words_len=args.word_len, class_label=['neg', 'pos'])
+            keywordObj.assign_connotation(words_len=args.word_len, 
+                                          class_label=['neg', 'pos'])
 
             print('Vectorize...')
             # 4. Vectorize document and keyword for model input(s)
@@ -434,13 +439,15 @@ if __name__ == "__main__":
         print('{}: Load dataset'.format(config['start_time']))
         
         if os.path.exists(DATA_PATH) and os.path.exists(KEYWORD_PATH):
-            keyword = json.load(open(KEYWORD_PATH, 'r'))
+            keyword = json.load(open(KEYWORD_PATH, 
+                                     'r'))
             
             print('Loading...')
             
             X_ = pd.read_parquet(DATA_PATH)
             
-            def apply_categories(data, labels=['cs.ai', 'cs.cr']):
+            def apply_categories(data, 
+                                 labels=['cs.ai', 'cs.cr']):
                 '''
                     Need to make sure that there is no overlap between these categories first!
                 '''
@@ -474,7 +481,9 @@ if __name__ == "__main__":
             keywordObj = KeywordBank(keyword=keyword, 
                                      xtrain=X_train, 
                                      ytrain=y_train)
-            keywordObj.assign_connotation(words_len=args.word_len, class_label=['crypto', 'ai'])
+            
+            keywordObj.assign_connotation(words_len=args.word_len, 
+                                          class_label=['crypto', 'ai'])
             
             print('vectorize...')
             X_train, X_test = utils.vectorize_keywords_docs(X_train, 
@@ -485,6 +494,53 @@ if __name__ == "__main__":
                                               'test':len(y_test)}
         else:
             raise ValueError('Path doesn\'t exist. Please check the availability of your data')
+    elif args.dataset.lower() == 'agnews':
+        DATA_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/dataset/ag_news_csv/'
+        KEYWORD_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/data/agnews-sci_sport-keywords/agnews_keywords.json'
+        
+        print('{}: Load dataset'.format(config['start_time']))
+        
+        if os.path.exists(DATA_PATH) and os.path.exists(KEYWORD_PATH):
+            keyword = json.load(open(KEYWORD_PATH, 
+                                     'r'))
+            
+            print('Loading...')
+            
+            X_train, X_test, y_train, y_test = load_ag_news(DATA_PATH,
+                                                            shuffle = True,
+                                                            lower = True,
+                                                            tokenize = True)
+            
+            keywordObj = KeywordBank(keyword=keyword, 
+                                     xtrain=X_train, 
+                                     ytrain=y_train)
+            
+            keywordObj.assign_connotation(words_len=args.word_len, 
+                                          class_label=['sports', 'scitech'])
+            
+            print('vectorize...')
+            X_train, X_test = utils.vectorize_keywords_docs(X_train, 
+                                                            X_test, 
+                                                            keywordObj)
+            
+            def get_sci_sports(X, y):
+                ind = np.array(list(np.where(y==2)[0]) + list(np.where(y==4)[0]))
+                
+                X['docs'] = X['docs'][ind]
+                X['keys'] = X['keys'][ind]
+                y = y[ind]
+
+                y = [1 if y_==4 else 0 for y_ in y]
+                
+                return X, np.array(y)
+            
+            X_train, y_train = get_sci_sports(X_train, y_train)
+            X_test, y_test = get_sci_sports(X_test, y_test)
+            
+
+            config['data_summary']['keyword'] = keyword[args.word_len]['summary']
+            config['data_summary']['data'] = {'train':len(y_train), 
+                                              'test':len(y_test)}
     else:
         
         # TODO: add if there is any directory to new dataset.
