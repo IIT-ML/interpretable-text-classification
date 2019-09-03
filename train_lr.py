@@ -26,6 +26,7 @@ import copy
 import glob
 import datetime
 import pandas as pd
+from collections import defaultdict
 from pytz import timezone
 
 from utils import utils, dataset_helper
@@ -105,7 +106,6 @@ if __name__ == "__main__":
             print('Loading...')
             
             X_ = pd.read_parquet(DATA_PATH)
-            
             
             categories = ['cs.lg',
                           'cs.cv',
@@ -190,7 +190,6 @@ if __name__ == "__main__":
             config['results'][str(c)]['categories'] = '({},{})'.format(categories[c[0]-1], categories[c[1]-1])
             config['results'][str(c)]['train_test_len'] = (len(y_tr), len(y_te))
             
-                
             clf = LogisticRegression(penalty='l1', random_state=RAND_SEED)
             clf.fit(X_tr['docs'], y_tr)
             
@@ -238,7 +237,9 @@ if __name__ == "__main__":
         for c in comb:
             config['results'][str(c)] = {}
             
-            X_['categories'] = X_['categories'].apply(apply_categories(labels))
+            X_comb = X_.copy(deep=True)
+            
+            X_['categories'] = X_['categories'].apply(apply_categories, args=(c))
             
             X_tr, y_tr = get_categories(X_train, y_train, c)
             X_te, y_te = get_categories(X_test, y_test, c)
