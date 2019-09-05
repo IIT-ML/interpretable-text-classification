@@ -98,7 +98,7 @@ if __name__ == "__main__":
         else:
             raise ValueError('Path doesn\'t exist. Please check the availability of your data')
     elif args.dataset.lower() == 'arxiv':
-        DATA_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/dataset/arxiv_cs_09_19_data.parquet'
+        DATA_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/dataset/arxiv_top10_multi_label.parquet'
         
         print('{}: Load dataset'.format(config['start_time']))
         
@@ -204,7 +204,7 @@ if __name__ == "__main__":
             zero_indices = np.argsort(weight)
             one_indices = zero_indices[::-1]
             
-            threshold = 50
+            threshold = 150
             
             config['results'][str(c)]['{}-{}-words'.format(str(c[0]), threshold)] = []
             config['results'][str(c)]['{}-{}-words'.format(str(c[1]), threshold)] = []
@@ -217,41 +217,64 @@ if __name__ == "__main__":
 
     elif args.dataset.lower() == 'arxiv':
         
+        directory = 'lr-{}-{}'.format(args.dataset, 
+                                      config['start_time'])
+        
+        w_dir = 'weights/{}'.format(directory)
+        
+        if not os.path.exists(os.path.join(args.parent_dir, w_dir)):
+            os.mkdir(os.path.join(args.parent_dir, w_dir))
+        
+        
         from sklearn.linear_model import LogisticRegression
         from itertools import combinations 
             
         comb = combinations(categories, 2)
         config['results'] = {}
         
-        def apply_categories(data,
-                             labels=['cs.ai', 'cs.cr']):
-            '''
-                Need to make sure that there is no overlap between these categories first!
-            '''
-
-            for l in labels:
-                if l in data.split(' '):
-                    return l
-
+        
         ### iter here
         for c in comb:
+            print('processing...... ', c)
             config['results'][str(c)] = {}
             
-            X_comb = X_.copy(deep=True)
+            X_comb = X_[['abstract', c[0], c[1]]].copy(deep=True)
             
-            X_['categories'] = X_['categories'].apply(apply_categories, args=(c))
+            drop_indices = X_comb[((X_comb[c[0]] == 0) & (X_comb[c[1]] == 0)) | ((X_comb[c[0]] == 1) & (X_comb[c[1]] == 1))].index
+            drop_indices = list(drop_indices)
+            X_comb = X_comb.drop(drop_indices)
             
-            X_tr, y_tr = get_categories(X_train, y_train, c)
-            X_te, y_te = get_categories(X_test, y_test, c)
-            config['results'][str(c)]['categories'] = '({},{})'.format(categories[c[0]-1], categories[c[1]-1])
-            config['results'][str(c)]['train_test_len'] = (len(y_tr), len(y_te))
+            X_comb = X_comb.drop(columns=[c[1]])
             
-                
+            from sklearn.model_selection import train_test_split
+            print('train, test, split')
+            X_train, X_test, y_train, y_test = train_test_split(X_comb['abstract'], 
+                                                                X_comb[c[0]], 
+                                                                test_size=(1./3), 
+                                                                random_state=RAND_SEED)
+            
+            config['results'][str(c)]['categories'] = str(c)
+            config['results'][str(c)]['train_test_len'] = (len(y_train), len(y_test))
+            
+            
+            X_train = list(X_train)
+            X_test = list(X_test)
+            
+            from nltk.tokenize import word_tokenize
+            print('Tokenize...')
+            X_train = [word_tokenize(text) for text in X_train]
+            X_test = [word_tokenize(text) for text in X_test]
+            
+            
+            print('vectorize...')
+            X_train, X_test, cv = utils.vectorize_keywords_docs(X_train, 
+                                                            X_test, return_cv=True)
+            
             clf = LogisticRegression(penalty='l1', random_state=RAND_SEED)
-            clf.fit(X_tr['docs'], y_tr)
+            clf.fit(X_train['docs'], y_train)
             
-            config['results'][str(c)]['train_acc'] = clf.score(X_tr['docs'], y_tr)
-            config['results'][str(c)]['test_acc'] = clf.score(X_te['docs'], y_te)
+            config['results'][str(c)]['train_acc'] = clf.score(X_train['docs'], y_train)
+            config['results'][str(c)]['test_acc'] = clf.score(X_test['docs'], y_test)
             
             # Maybe get 50 top of words? From each category? 
             
@@ -261,7 +284,7 @@ if __name__ == "__main__":
             zero_indices = np.argsort(weight)
             one_indices = zero_indices[::-1]
             
-            threshold = 50
+            threshold = 150
             
             config['results'][str(c)]['{}-{}-words'.format(str(c[0]), threshold)] = []
             config['results'][str(c)]['{}-{}-words'.format(str(c[1]), threshold)] = []
@@ -272,29 +295,6 @@ if __name__ == "__main__":
         
         config['end_time'] = datetime.datetime.now(timezone('US/Central')).strftime("%y-%m-%d_%H:%M:%S")
         
-        
-        X_['categories'] = X_['categories'].apply(apply_categories)
-            
-            
-        from sklearn.model_selection import train_test_split
-        print('train, test, split')
-        X_train, X_test, y_train, y_test = train_test_split(X_['abstract'], 
-                                                            X_['categories'], 
-                                                            test_size=(1./3), 
-                                                            random_state=42)
-        del X_
-        X_train = list(X_train)
-        X_test = list(X_test)
-            
-        from nltk.tokenize import word_tokenize
-        print('Tokenize...')
-        X_train = [word_tokenize(text) for text in X_train]
-        X_test = [word_tokenize(text) for text in X_test]
-            
-        to_binary = {'cs.ai':1, 'cs.cr':0}
-        y_train = y_train.apply(lambda x: to_binary[x])
-        y_test = y_test.apply(lambda x: to_binary[x])
-        pass
     
     with open('{}/CONFIG'.format(os.path.join(args.parent_dir, w_dir)), 'w') as outfile:
             json.dump(config, outfile, indent=4)

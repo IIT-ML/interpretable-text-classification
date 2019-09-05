@@ -26,7 +26,7 @@ import pandas
 import re
 
 
-def show_explanations(preds, corpus, explanation_vector, keywordBank, notebook=True, verbose=True):
+def show_explanations(preds, corpus, explanation_vector, keywordBank, true_label=None, notebook=True, verbose=True):
     """
     Show the explanation given explanation_vector
     
@@ -40,23 +40,25 @@ def show_explanations(preds, corpus, explanation_vector, keywordBank, notebook=T
         # Show to the notebook if displayed on jupyter notebook
         from IPython import display
         
-        
+        k = sorted(list(keywordBank.connotation.keys()))
         print('Document:')
         display.display(ColoredWeightedDoc(' '.join(corpus), 
-                                           keywordBank.keyword, 
+                                           k, #keywordBank.keyword, 
                                            explanation_vector, 
                                            binary = True))
         
         if verbose:
             if preds != -1:
                 print('-'*50)
+                if true_label:
+                    print('True label : {}'.format(true_label))
                 print('This document predicted as {} because it has {} keyword justified as shown below:'.format(preds,
                                                                                                np.sum(explanation_vector!=0)))
             
                 print()
                 for i,key in enumerate(explanation_vector):
                     if key != 0:
-                        print('- {}'.format(keywordBank.keyword[i]))
+                        print('- {}'.format(k[i]))
             else:
                 print('This document does not has explanation. The model rejected...')
 

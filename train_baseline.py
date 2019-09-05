@@ -205,7 +205,6 @@ if __name__ == "__main__":
 
             X_['categories'] = X_['categories'].apply(apply_categories)
             
-            
             from sklearn.model_selection import train_test_split
             print('train, test, split')
             X_train, X_test, y_train, y_test = train_test_split(X_['abstract'], 
@@ -243,7 +242,7 @@ if __name__ == "__main__":
             raise ValueError('Path doesn\'t exist. Please check the availability of your data')
     elif args.dataset.lower() == 'agnews':
         DATA_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/dataset/ag_news_csv/'
-        KEYWORD_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/data/agnews-sci_sport-keywords/agnews_keywords.json'
+        KEYWORD_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/data/agnews-sci_sport-keywords/agnews_scitechsports_keywords.json'
         
         print('{}: Load dataset'.format(config['start_time']))
         
@@ -288,13 +287,15 @@ if __name__ == "__main__":
             config['data_summary']['data'] = {'train':len(y_train), 
                                               'test':len(y_test)}
     else:
-        
+        print('Failed')
         # TODO: add if there is any directory to new dataset.
         pass
     
     # Train / test
     
     if not args.testing:
+        
+        PREDS_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/dataset/vectors'
         
         directory = 'base-{}-{}-{}'.format(args.dataset, 
                                              args.word_len,
@@ -316,6 +317,10 @@ if __name__ == "__main__":
         config['results']['LR'] = {}
         config['results']['LR']['train_acc'] = clf.score(X_train['docs'], y_train)
         config['results']['LR']['test_acc'] = clf.score(X_test['docs'], y_test)
+        
+        pd.DataFrame({'y_test':clf.predict(X_test['docs'])}).to_parquet(os.path.join(PREDS_PATH, 
+                                                                                     '{}-{}-LR.parquet'.format(args.dataset, 
+                                                                                                    args.word_len)))
         
         del clf
 
@@ -362,7 +367,14 @@ if __name__ == "__main__":
         
         config['results']['LR_keys']['test']['total_accept'] = len(accept_indices)
         config['results']['LR_keys']['test']['total_reject'] = len(reject_indices)
-        config['results']['LR_keys']['test']['rejection_rate'] = len(reject_indices) / len(y_train)
+        config['results']['LR_keys']['test']['rejection_rate'] = len(reject_indices) / len(y_test)
+        
+        preds = clf.predict(X_test['keys'])
+        preds[reject_indices] = -1
+        
+        pd.DataFrame({'y_test': preds}).to_parquet(os.path.join(PREDS_PATH, 
+                                                                '{}-{}-LR-keys.parquet'.format(args.dataset,
+                                                                                          args.word_len)))
         
         try:
             config['results']['LR_keys']['test']['accuracy_with_reject'] = clf.score(X_test['keys'][accept_indices],

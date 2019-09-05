@@ -166,7 +166,6 @@ def train(model,
           batch_size,
           lr,
           lr_decay,
-          log_dir, 
           weights_dir,
           train_mode=3, 
           save_weights=True,
@@ -496,7 +495,7 @@ if __name__ == "__main__":
             raise ValueError('Path doesn\'t exist. Please check the availability of your data')
     elif args.dataset.lower() == 'agnews':
         DATA_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/dataset/ag_news_csv/'
-        KEYWORD_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/data/agnews-sci_sport-keywords/agnews_keywords.json'
+        KEYWORD_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/data/agnews-sci_sport-keywords/agnews_scitechworld_keywords.json'
         
         print('{}: Load dataset'.format(config['start_time']))
         
@@ -516,7 +515,7 @@ if __name__ == "__main__":
                                      ytrain=y_train)
             
             keywordObj.assign_connotation(words_len=args.word_len, 
-                                          class_label=['sports', 'scitech'])
+                                          class_label=['world', 'scitech'])
             
             print('vectorize...')
             X_train, X_test = utils.vectorize_keywords_docs(X_train, 
@@ -524,7 +523,7 @@ if __name__ == "__main__":
                                                             keywordObj)
             
             def get_sci_sports(X, y):
-                ind = np.array(list(np.where(y==2)[0]) + list(np.where(y==4)[0]))
+                ind = np.array(list(np.where(y==1)[0]) + list(np.where(y==4)[0]))
                 
                 X['docs'] = X['docs'][ind]
                 X['keys'] = X['keys'][ind]
@@ -560,13 +559,13 @@ if __name__ == "__main__":
                                              args.batch_size,
                                              config['start_time'])
     
-        w_dir = 'weights/{}'.format(directory)
-        l_dir = 'log_dir/{}'.format(directory)
+        w_dir = directory
+        #l_dir = 'log_dir/{}'.format(directory)
         
         if not os.path.exists(os.path.join(args.parent_dir, w_dir)):
             os.mkdir(os.path.join(args.parent_dir, w_dir))
-        if not os.path.exists(os.path.join(args.parent_dir, l_dir)):
-            os.mkdir(os.path.join(args.parent_dir, l_dir))
+#         if not os.path.exists(os.path.join(args.parent_dir, l_dir)):
+#             os.mkdir(os.path.join(args.parent_dir, l_dir))
 
         
         model = InterpretableCautiousText(X_train['docs'].shape[1], len(keywordObj.connotation))
@@ -577,7 +576,6 @@ if __name__ == "__main__":
                   args.batch_size,
                   args.lr,
                   args.lr_decay, 
-                  os.path.join(args.parent_dir, l_dir), 
                   os.path.join(args.parent_dir, w_dir),
                   args.train_mode)
         
