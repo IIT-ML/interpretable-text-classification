@@ -10,8 +10,7 @@ To quick demo on the notebook please go to the following:
 
 ## Data
 ### Dataset
-Sentiment Analysis
-1. [IMDB](https://ai.stanford.edu/~amaas/data/sentiment/)
+1. IMDB [[source]](https://ai.stanford.edu/~amaas/data/sentiment/)[[keyword]]()
 2. [Arxiv]()
 3. [AGNews]()
 
