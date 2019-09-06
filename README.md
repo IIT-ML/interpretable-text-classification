@@ -22,7 +22,7 @@ Scientific Paper Classification
 1. IMDB (83 keyword) link [here](https://github.com/annekehdyt/interpretable-cautious-text/blob/master/data/imdb-unigrams.txt)
 
 ## Model illustration
-![Alt text](https://github.com/annekehdyt/interpretable-cautious-text/blob/master/figures/model.png)
+![Alt text](./figures/model.png)
 
 ## Usage
 To see help option:
