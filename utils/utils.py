@@ -60,6 +60,8 @@ def show_explanations(preds, corpus, explanation_vector, keywordBank, true_label
                     if key != 0:
                         print('- {}'.format(k[i]))
             else:
+                if true_label:
+                    print('True label : {}'.format(true_label))
                 print('This document does not has explanation. The model rejected...')
 
 class ColoredWeightedDoc(object):
