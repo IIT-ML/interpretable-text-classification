@@ -12,10 +12,13 @@ To quick demo on the notebook please go to the following:
 ### Dataset
 Sentiment Analysis
 1. [IMDB](https://ai.stanford.edu/~amaas/data/sentiment/)
-2. [Amazon](http://jmcauley.ucsd.edu/data/amazon/)
-3. [E-commerce](https://www.kaggle.com/nicapotato/womens-ecommerce-clothing-reviews)
+2. [Arxiv]()
+3. [AGNews]()
 
-Scientific Paper Classification
+#2. [Amazon](http://jmcauley.ucsd.edu/data/amazon/)
+#3. [E-commerce](https://www.kaggle.com/nicapotato/womens-ecommerce-clothing-reviews)
+
+#Scientific Paper Classification
 1. PeerRead [[data](https://github.com/allenai/PeerRead)] [[summary](https://github.com/IIT-ML/ann-mitchell-text-classification/blob/master/data/PeerRead-meta.md)] [[notebook](https://github.com/IIT-ML/ann-mitchell-text-classification/blob/master/scientific_paper_data_debug.ipynb)]
 
 ### Keyword (.txt format)
