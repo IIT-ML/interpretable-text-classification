@@ -1,47 +1,36 @@
 # Interpretable and Cautious Text Classification
 
+
+
 ## Description
-This repo is our experiment on our paper "Interpretable and Cautious Text Classification" under preparation. <br>
-To see the detail report please refer to this [link](https://github.com/IIT-ML/ann-mitchell-text-classification/blob/master/REPORT.md).
+This is a collection of source code necessary for reproducibility.   <br>
 
-## Demo
-To quick demo on the notebook please go to the following:
-1. IMDB data [notebook](https://github.com/annekehdyt/interpretable-cautious-text/blob/master/Program%20Pipeline.ipynb)
+## Dataset
+There are two main data folders: data and dataset.
+1. Dataset folder is the path to the dataset used in our experiment: 1) IMDB, 2) ArXiV, 3) AGnews
+    We're providing the dataset, except the public dataset (IMDB), into our submission.
+    The data is included in this folder
+2. Data folder contains keywords parquet data provided in this folder
 
-## Data
-### Dataset
-1. IMDB [[source]](https://ai.stanford.edu/~amaas/data/sentiment/)[[keyword]]()
-2. [Arxiv]()
-3. [AGNews]()
 
-#2. [Amazon](http://jmcauley.ucsd.edu/data/amazon/)
-#3. [E-commerce](https://www.kaggle.com/nicapotato/womens-ecommerce-clothing-reviews)
+## Source Code
+This main folder contains of two main file: .py and .sh <br>
+To reproduce the result, please run the command line as stated in .sh file. <br>
 
-#Scientific Paper Classification
-1. PeerRead [[data](https://github.com/allenai/PeerRead)] [[summary](https://github.com/IIT-ML/ann-mitchell-text-classification/blob/master/data/PeerRead-meta.md)] [[notebook](https://github.com/IIT-ML/ann-mitchell-text-classification/blob/master/scientific_paper_data_debug.ipynb)]
+### shell script
+1. run_baseline.sh: to reproduce the result by Logistic Regression
+2. run_hierarchical_attention.sh: to reproduce the result by HN and HAN (you need Glove Embedding)
+3. run_cautious.sh: to reproduce the result by our model
 
-### Keyword (.txt format)
-1. IMDB (83 keyword) link [here](https://github.com/annekehdyt/interpretable-cautious-text/blob/master/data/imdb-unigrams.txt)
 
-## Model illustration
-![Alt text](./figures/model.png)
+### Python Code
 
-## Usage
-To see help option:
+1. train.py: Main .py script to our model
+2. train_baseline.py: .py script for Logistic Regression
+3. train_hierarchical.py: .py script for HN and HAN.
 
-``python3 model.py -h``
+## Parameter
+Note that we're trying to uniform our model's setup linearly with Logistic Regression, thus the total number of parameter in our model is linear to the input document in Initial assessment f_D + final classification f_C. 
 
-### Train model
-<br> <br>
-``python3 model.py --gpu --dataset [DATASET_NAME] --train_mode 3 --epochs 1 --batch_size 1``
-<br><br>
-Example : 
-``python3 model.py --gpu --dataset "imdb" --train_mode 3 --epochs 1 --batch_size 1``
 
-### Test model
-<br><br>
-``python3 model-py --gpu --testing --weights [WEIGHT NAME] --dataset [DATASET_NAME]``
-<br><br>
-
-For explanation demo, please refer to [notebook](https://github.com/annekehdyt/interpretable-cautious-text/blob/master/Program%20Pipeline.ipynb)
-<br> The ``show_explanation`` function won't work if viewed in github. Please clone the repo and run the notebook
+***Please follow the shell script

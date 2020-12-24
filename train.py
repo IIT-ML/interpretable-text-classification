@@ -11,10 +11,6 @@ Method:
 Usage:
     >>> model = InterpretableCautiousText()
     
-    
-Author: Anneke Hidayat, Mitchell Zhen, Mustafa Bilgic
-
-# TODO : separate model.py, test.py, train.py
 """
 
 import os
@@ -29,6 +25,8 @@ from pytz import timezone
 
 from utils import utils, dataset_helper
 from KeywordBank import KeywordBank
+from nltk.tokenize import word_tokenize
+from utils.dataset_helper import load_ag_news
 RAND_SEED = 42
 
 class InterpretableCautiousText():
@@ -164,7 +162,6 @@ def train(model,
           batch_size,
           lr,
           lr_decay,
-          log_dir, 
           weights_dir,
           train_mode=3, 
           save_weights=True,
@@ -184,7 +181,7 @@ def train(model,
     
     # callbacks
     if return_callbacks:
-        early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=10)
+        early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=100)
         #log = keras.callbacks.CSVLogger(os.path.join(log_dir, 'log-{}.csv'.format(train_mode)))
         checkpoint = keras.callbacks.ModelCheckpoint(os.path.join(weights_dir, '{epoch:03d}-{val_loss:.3f}-{val_acc:.3f}.h5'),
                                                     monitor='val_loss',
@@ -214,7 +211,7 @@ def train(model,
                                validation_split = (1./3),
                                shuffle=True,
                                batch_size=batch_size,
-                               epochs=(epochs%5)+1)
+                               epochs=1)
         
         # Froze the initial model's weights
         model.initial_model.trainable=False
@@ -228,13 +225,13 @@ def train(model,
                              callbacks=callbacks)
         
     elif train_mode == 3:
-        # ore-trained joint
+        # pre-trained joint
         model.initial_model.fit(data['docs'],
                                label,
                                validation_split = (1./3),
                                shuffle=True,
                                batch_size=batch_size,
-                               epochs=(epochs%5)+1)
+                               epochs=1)
         
         # Make it trainable when it trained the final model
         model.initial_model.trainable=True
@@ -248,14 +245,6 @@ def train(model,
                              callbacks=callbacks)
     else:
         raise ValueError('train_mode is not recognized..')
-    
-    #if save_weights:
-    #    model.final_model.save_weights(os.path.join(weights_dir, '{}-trained-model.h5'.format(train_mode)))
-        
-    #if epochs > 1:
-    #    from utils import plot_log
-    #    plot_log(os.path.join(LOG_DIR, 'log-{}.csv'.format(train_mode)),
-    #             show=True)
     
     return model
 
@@ -308,8 +297,15 @@ def test(model,
     if label is None:
         return report, preds, explanation_vec
     else:
-        eval_result = md.evaluate([data['docs'][doc_YES_exp_indices], data['keys'][doc_YES_exp_indices]],
-                                    label[doc_YES_exp_indices])
+        if isinstance(label, pd.DataFrame):
+            eval_result = md.evaluate([data['docs'][doc_YES_exp_indices], data['keys'][doc_YES_exp_indices]],
+                                       label.iloc[doc_YES_exp_indices].get_values())
+        else:
+            if isinstance(label, list):
+                lable = np.array(label)
+            
+            eval_result = md.evaluate([data['docs'][doc_YES_exp_indices], data['keys'][doc_YES_exp_indices]],
+                                       label[doc_YES_exp_indices])
         
         report['loss'] = np.around(eval_result[0], 3)
         report['acc'] = np.around(eval_result[1], 3)
@@ -327,7 +323,6 @@ if __name__ == "__main__":
                         action='store_true',
                         help="If given, the operation will be operated in GPU")
     
-    #### For temporary, the amazon_video and e_commerce won't be available
     parser.add_argument('--dataset', 
                         default='imdb',
                         help="dataset. {'imdb', 'arxiv', 'agnews'}. If path given, use the path")
@@ -360,7 +355,7 @@ if __name__ == "__main__":
                         default=0.9, 
                         type=float)
     parser.add_argument('--parent_dir', 
-                        default='/home/anneke/Documents/models/', 
+                        default='./models/', 
                         type=str,
                         help="Path to save model")
     parser.add_argument('--word_len',
@@ -409,7 +404,8 @@ if __name__ == "__main__":
             keywordObj = KeywordBank(keyword=keyword, 
                                     xtrain=X_train_corpus, 
                                     ytrain=y_train)
-            keywordObj.assign_connotation(words_len=args.word_len, class_label=['neg', 'pos'])
+            keywordObj.assign_connotation(words_len=args.word_len, 
+                                          class_label=['neg', 'pos'])
 
             print('Vectorize...')
             # 4. Vectorize document and keyword for model input(s)
@@ -423,9 +419,115 @@ if __name__ == "__main__":
         else:
             raise ValueError('Path doesn\'t exist. Please check the availability of your data')
     elif args.dataset.lower() == 'arxiv':
-        #DATA_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/dataset/arxiv/'
-        pass
+        DATA_PATH = './dataset/arxiv_ai_crypto_data.parquet'
+        KEYWORD_PATH = './data/arxiv-aicrypto-keywords/arxiv_keywords.json'
         
+        print('{}: Load dataset'.format(config['start_time']))
+        
+        if os.path.exists(DATA_PATH) and os.path.exists(KEYWORD_PATH):
+            keyword = json.load(open(KEYWORD_PATH, 
+                                     'r'))
+            
+            print('Loading...')
+            
+            X_ = pd.read_parquet(DATA_PATH)
+            
+            def apply_categories(data, 
+                                 labels=['cs.ai', 'cs.cr']):
+                '''
+                    Need to make sure that there is no overlap between these categories first!
+                '''
+
+                for l in labels:
+                    if l in data.split(' '):
+                        return l
+
+            X_['categories'] = X_['categories'].apply(apply_categories)
+            
+            
+            from sklearn.model_selection import train_test_split
+            print('train, test, split')
+            X_train, X_test, y_train, y_test = train_test_split(X_['abstract'], 
+                                                                X_['categories'], 
+                                                                test_size=(1./3), 
+                                                                random_state=42)
+            del X_
+            X_train = list(X_train)
+            X_test = list(X_test)
+            
+            from nltk.tokenize import word_tokenize
+            print('Tokenize...')
+            X_train = [word_tokenize(text) for text in X_train]
+            X_test = [word_tokenize(text) for text in X_test]
+            
+            to_binary = {'cs.ai':1, 'cs.cr':0}
+            y_train = y_train.apply(lambda x: to_binary[x])
+            y_test = y_test.apply(lambda x: to_binary[x])
+            
+            keywordObj = KeywordBank(keyword=keyword, 
+                                     xtrain=X_train, 
+                                     ytrain=y_train)
+            
+            keywordObj.assign_connotation(words_len=args.word_len, 
+                                          class_label=['crypto', 'ai'])
+            
+            print('vectorize...')
+            X_train, X_test = utils.vectorize_keywords_docs(X_train, 
+                                                            X_test, 
+                                                            keywordObj)
+            config['data_summary']['keyword'] = keyword[args.word_len]['summary']
+            config['data_summary']['data'] = {'train':len(y_train), 
+                                              'test':len(y_test)}
+        else:
+            raise ValueError('Path doesn\'t exist. Please check the availability of your data')
+            
+    elif args.dataset.lower() == 'agnews':
+        DATA_PATH = './dataset/ag_news_csv/'
+        KEYWORD_PATH = './data/agnews-sci_sport-keywords/agnews_scitechworld_keywords.json'
+        
+        print('{}: Load dataset'.format(config['start_time']))
+        
+        if os.path.exists(DATA_PATH) and os.path.exists(KEYWORD_PATH):
+            keyword = json.load(open(KEYWORD_PATH, 
+                                     'r'))
+            
+            print('Loading...')
+            
+            X_train, X_test, y_train, y_test = load_ag_news(DATA_PATH,
+                                                            shuffle = True,
+                                                            lower = True,
+                                                            tokenize = True)
+            
+            keywordObj = KeywordBank(keyword=keyword, 
+                                     xtrain=X_train, 
+                                     ytrain=y_train)
+            
+            keywordObj.assign_connotation(words_len=args.word_len, 
+                                          class_label=['world', 'scitech'])
+            
+            print('vectorize...')
+            X_train, X_test = utils.vectorize_keywords_docs(X_train, 
+                                                            X_test, 
+                                                            keywordObj)
+            
+            def get_sci_sports(X, y):
+                ind = np.array(list(np.where(y==1)[0]) + list(np.where(y==4)[0]))
+                
+                X['docs'] = X['docs'][ind]
+                X['keys'] = X['keys'][ind]
+                y = y[ind]
+
+                y = [1 if y_==4 else 0 for y_ in y]
+                
+                return X, np.array(y)
+            
+            X_train, y_train = get_sci_sports(X_train, y_train)
+            X_test, y_test = get_sci_sports(X_test, y_test)
+            
+
+            config['data_summary']['keyword'] = keyword[args.word_len]['summary']
+            config['data_summary']['data'] = {'train':len(y_train), 
+                                              'test':len(y_test)}
     else:
         
         # TODO: add if there is any directory to new dataset.
@@ -445,13 +547,10 @@ if __name__ == "__main__":
                                              args.batch_size,
                                              config['start_time'])
     
-        w_dir = 'weights/{}'.format(directory)
-        l_dir = 'log_dir/{}'.format(directory)
+        w_dir = directory
         
         if not os.path.exists(os.path.join(args.parent_dir, w_dir)):
             os.mkdir(os.path.join(args.parent_dir, w_dir))
-        if not os.path.exists(os.path.join(args.parent_dir, l_dir)):
-            os.mkdir(os.path.join(args.parent_dir, l_dir))
 
         
         model = InterpretableCautiousText(X_train['docs'].shape[1], len(keywordObj.connotation))
@@ -462,7 +561,6 @@ if __name__ == "__main__":
                   args.batch_size,
                   args.lr,
                   args.lr_decay, 
-                  os.path.join(args.parent_dir, l_dir), 
                   os.path.join(args.parent_dir, w_dir),
                   args.train_mode)
         
@@ -470,6 +568,7 @@ if __name__ == "__main__":
         
         best_model = sorted(glob.glob(os.path.join(args.parent_dir, w_dir)+"/*.h5"))[-1]
         
+        print(best_model)
         m.final_model.load_weights(best_model)
         
         report, preds, exp_vec = test(m,
@@ -481,14 +580,13 @@ if __name__ == "__main__":
         with open('{}/CONFIG'.format(os.path.join(args.parent_dir, w_dir)), 'w') as outfile:
             json.dump(config, outfile, indent=4)
            
-        
         l = [v for v in exp_vec]
         df = pd.DataFrame({'label': y_test,
                            'preds': preds,
                            'explanation':l})
         
         df.to_parquet('{}/test.parquet'.format(os.path.join(args.parent_dir, w_dir)))
-        
+        print('Finish.....')
     else:
         # load weights
         pre_trained_weight = args.weights
@@ -497,8 +595,7 @@ if __name__ == "__main__":
                               X_test, 
                               label=y_test)
         
-        #TODO: Create file. Let's create on df. since we have exp_vec. 
-        #label, preds, exp_vec
+
         print(report)
 
         

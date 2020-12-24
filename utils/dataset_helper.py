@@ -9,7 +9,6 @@ Usage:
     >>> X_train_corpus, y_train, X_test_corpus, y_test = dataset_helper.load_imdb(IMDB_PATH, lower=True, tokenize=True)
     
     
-Author: Anneke Hidayat, Mitchell Zhen, Mustafa Bilgic
 """
 
 import os

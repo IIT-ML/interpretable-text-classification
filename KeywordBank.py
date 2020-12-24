@@ -9,7 +9,6 @@ Usage:
     >>> imdbKeyword.get_connotation()
     >>> imdbKeyword.connotation
     
-Author: Anneke Hidayat, Mitchell Zhen, Mustafa Bilgic
 """
 
 import os

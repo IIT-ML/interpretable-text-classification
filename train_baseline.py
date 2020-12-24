@@ -1,5 +1,6 @@
 """
 Script to the model. 
+Train baseline as Logistic Regression
 
 Class:
     InterpretableCautiousText
@@ -11,10 +12,7 @@ Method:
 Usage:
     >>> model = InterpretableCautiousText()
     
-    
-Author: Anneke Hidayat, Mitchell Zhen, Mustafa Bilgic
 
-# TODO : separate model.py, test.py, train.py
 """
 
 import os
@@ -116,7 +114,7 @@ if __name__ == "__main__":
                         action='store_true',
                         help="test data with the given model path")
     parser.add_argument('--parent_dir', 
-                        default='/home/anneke/Documents/models/', 
+                        default='./models/', 
                         type=str,
                         help="Path to save model")
     parser.add_argument('--word_len',
@@ -157,22 +155,31 @@ if __name__ == "__main__":
             keyword = json.load(open(KEYWORD_PATH, 'r'))
             
             print('Loading...')
-            X_train_corpus, y_train, X_test_corpus, y_test = dataset_helper.load_imdb(DATA_PATH, 
-                                                                                      lower=True, 
-                                                                                      tokenize=True)
+            X_train_corpus, y_train, X_test_corpus, y_test = dataset_helper.load_imdb(
+                DATA_PATH, 
+                lower=True, 
+                tokenize=True,
+            )
 
             # 3. Create object to process keyword along with its connotation (keywordBank)
-            keywordObj = KeywordBank(keyword=keyword, 
-                                    xtrain=X_train_corpus, 
-                                    ytrain=y_train)
-            keywordObj.assign_connotation(words_len=args.word_len, 
-                                          class_label=['neg', 'pos'])
+            keywordObj = KeywordBank(
+                keyword=keyword, 
+                xtrain=X_train_corpus, 
+                ytrain=y_train,
+            )
+            keywordObj.assign_connotation(
+                words_len=args.word_len, 
+                class_label=['neg', 'pos'],
+            )
 
             print('Vectorize...')
             # 4. Vectorize document and keyword for model input(s)
-            X_train, X_test = utils.vectorize_keywords_docs(X_train_corpus, 
-                                                            X_test_corpus, 
-                                                            keywordObj)
+            X_train, X_test, cv = utils.vectorize_keywords_docs(
+                X_train_corpus, 
+                X_test_corpus, 
+                keywordObj,
+                return_cv=True,
+            )
             
             config['data_summary']['keyword'] = keyword[args.word_len]['summary']
             config['data_summary']['data'] = {'train':len(y_train), 
@@ -180,8 +187,8 @@ if __name__ == "__main__":
         else:
             raise ValueError('Path doesn\'t exist. Please check the availability of your data')
     elif args.dataset.lower() == 'arxiv':
-        DATA_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/dataset/arxiv_ai_crypto_data.parquet'
-        KEYWORD_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/data/arxiv-aicrypto-keywords/arxiv_keywords.json'
+        DATA_PATH = './dataset/arxiv_ai_crypto_data.parquet'
+        KEYWORD_PATH = './data/arxiv-aicrypto-keywords/arxiv_keywords.json'
         
         print('{}: Load dataset'.format(config['start_time']))
         
@@ -207,10 +214,13 @@ if __name__ == "__main__":
             
             from sklearn.model_selection import train_test_split
             print('train, test, split')
-            X_train, X_test, y_train, y_test = train_test_split(X_['abstract'], 
-                                                                X_['categories'], 
-                                                                test_size=(1./3), 
-                                                                random_state=42)
+            X_train, X_test, y_train, y_test = train_test_split(
+                X_['abstract'], 
+                X_['categories'], 
+                test_size=(1./3), 
+                random_state=42,
+            )
+            
             del X_
             X_train = list(X_train)
             X_test = list(X_test)
@@ -224,25 +234,32 @@ if __name__ == "__main__":
             y_train = y_train.apply(lambda x: to_binary[x])
             y_test = y_test.apply(lambda x: to_binary[x])
             
-            keywordObj = KeywordBank(keyword=keyword, 
-                                     xtrain=X_train, 
-                                     ytrain=y_train)
+            keywordObj = KeywordBank(
+                keyword=keyword, 
+                xtrain=X_train, 
+                ytrain=y_train,
+            )
             
-            keywordObj.assign_connotation(words_len=args.word_len, 
-                                          class_label=['crypto', 'ai'])
+            keywordObj.assign_connotation(
+                words_len=args.word_len, 
+                class_label=['crypto', 'ai'],
+            )
             
             print('vectorize...')
-            X_train, X_test = utils.vectorize_keywords_docs(X_train, 
-                                                            X_test, 
-                                                            keywordObj)
+            X_train, X_test, cv= utils.vectorize_keywords_docs(
+                X_train, 
+                X_test, 
+                keywordObj,
+                return_cv=True,
+            )
             config['data_summary']['keyword'] = keyword[args.word_len]['summary']
             config['data_summary']['data'] = {'train':len(y_train), 
                                               'test':len(y_test)}
         else:
             raise ValueError('Path doesn\'t exist. Please check the availability of your data')
     elif args.dataset.lower() == 'agnews':
-        DATA_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/dataset/ag_news_csv/'
-        KEYWORD_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/data/agnews-sci_sport-keywords/agnews_scitechsports_keywords.json'
+        DATA_PATH = './dataset/ag_news_csv/'
+        KEYWORD_PATH = './data/agnews-sci_sport-keywords/agnews_scitechsports_keywords.json'
         
         print('{}: Load dataset'.format(config['start_time']))
         
@@ -252,22 +269,31 @@ if __name__ == "__main__":
             
             print('{}-{}-Loading....'.format(args.dataset, args.word_len))
             
-            X_train, X_test, y_train, y_test = load_ag_news(DATA_PATH,
-                                                            shuffle = True,
-                                                            lower = True,
-                                                            tokenize = True)
+            X_train, X_test, y_train, y_test = load_ag_news(
+                DATA_PATH,
+                shuffle=True,
+                lower=True,
+                tokenize=True,
+            )
             
-            keywordObj = KeywordBank(keyword=keyword, 
-                                     xtrain=X_train, 
-                                     ytrain=y_train)
+            keywordObj = KeywordBank(
+                keyword=keyword, 
+                xtrain=X_train, 
+                ytrain=y_train,
+            )
             
-            keywordObj.assign_connotation(words_len=args.word_len, 
-                                          class_label=['sports', 'scitech'])
+            keywordObj.assign_connotation(
+                words_len=args.word_len,                           
+                class_label=['sports', 'scitech'],
+            )
             
             print('{}-{}-Vectorize....'.format(args.dataset, args.word_len))
-            X_train, X_test = utils.vectorize_keywords_docs(X_train, 
-                                                            X_test, 
-                                                            keywordObj)
+            X_train, X_test, cv = utils.vectorize_keywords_docs(
+                X_train, 
+                X_test, 
+                keywordObj,
+                return_cv=True
+            )
             
             def get_sci_sports(X, y):
                 ind = np.array(list(np.where(y==2)[0]) + list(np.where(y==4)[0]))
@@ -295,7 +321,7 @@ if __name__ == "__main__":
     
     if not args.testing:
         
-        PREDS_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/dataset/vectors'
+        PREDS_PATH = './dataset/vectors'
         
         directory = 'base-{}-{}-{}'.format(args.dataset, 
                                              args.word_len,
@@ -318,10 +344,15 @@ if __name__ == "__main__":
         config['results']['LR']['train_acc'] = clf.score(X_train['docs'], y_train)
         config['results']['LR']['test_acc'] = clf.score(X_test['docs'], y_test)
         
-        pd.DataFrame({'y_test':clf.predict(X_test['docs'])}).to_parquet(os.path.join(PREDS_PATH, 
+        pd.DataFrame({'y_test':clf.predict(X_test['docs']),
+                     'X_test':X_test['docs'].todense().tolist()},
+                    ).to_parquet(os.path.join(PREDS_PATH, 
                                                                                      '{}-{}-LR.parquet'.format(args.dataset, 
                                                                                                     args.word_len)))
-        
+        pd.DataFrame({'vocab':cv.get_feature_names()}).to_parquet(os.path.join(
+            PREDS_PATH, 
+            '{}-{}-LR-vocab.parquet'.format(args.dataset, args.word_len),
+        ))
         del clf
 
         # rejection rate count
@@ -372,9 +403,12 @@ if __name__ == "__main__":
         preds = clf.predict(X_test['keys'])
         preds[reject_indices] = -1
         
-        pd.DataFrame({'y_test': preds}).to_parquet(os.path.join(PREDS_PATH, 
+        pd.DataFrame({'y_test': preds,
+                     'X_test_key':X_test['keys'].todense().tolist()}).to_parquet(os.path.join(PREDS_PATH, 
                                                                 '{}-{}-LR-keys.parquet'.format(args.dataset,
                                                                                           args.word_len)))
+        
+        
         
         try:
             config['results']['LR_keys']['test']['accuracy_with_reject'] = clf.score(X_test['keys'][accept_indices],

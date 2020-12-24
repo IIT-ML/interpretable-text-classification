@@ -10,11 +10,8 @@ Method:
 
 Usage:
     >>> model = InterpretableCautiousText()
-    
-    
-Author: Anneke Hidayat, Mitchell Zhen, Mustafa Bilgic
+  
 
-# TODO : separate model.py, test.py, train.py
 """
 
 import os
@@ -67,10 +64,6 @@ VALIDATION_SPLIT = 0.2
 np.random.seed(RAND_SEED)
 tf.set_random_seed(RAND_SEED)
 
-
-# https://gist.github.com/cbaziotis/7ef97ccf71cbc14366835198c09809d2
-# other reference : 
-# https://gist.github.com/cbaziotis/6428df359af27d58078ca5ed9792bd6d
 
 def dot_product(x, kernel):
     if K.backend() == 'tensorflow':
@@ -167,7 +160,7 @@ if __name__ == "__main__":
                         action='store_true',
                         help="test data with the given model path")
     parser.add_argument('--parent_dir', 
-                        default='/home/anneke/Documents/models/', 
+                        default='./models/', 
                         type=str,
                         help="Path to save model")
     
@@ -209,7 +202,7 @@ if __name__ == "__main__":
         else:
             raise ValueError('Path doesn\'t exist. Please check the availability of your data')
     elif args.dataset.lower() == 'arxiv':
-        DATA_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/dataset/arxiv_ai_crypto_data.parquet'
+        DATA_PATH = './dataset/arxiv_ai_crypto_data.parquet'
         
         print('{}: Load dataset'.format(config['start_time']))
         
@@ -261,7 +254,7 @@ if __name__ == "__main__":
             raise ValueError('Path doesn\'t exist. Please check the availability of your data')
             
     elif args.dataset.lower() == 'agnews':
-        DATA_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/dataset/ag_news_csv/'
+        DATA_PATH = './dataset/ag_news_csv/'
         
         print('{}: Load dataset'.format(config['start_time']))
         
@@ -359,7 +352,7 @@ if __name__ == "__main__":
         y_test = np.array(labels_test)
         
         ###### Embedding
-        GLOVE_DIR = "/home/anneke/Documents/dataset/"
+        GLOVE_DIR = "/dataset/"
         embeddings_index = {}
         f = open(os.path.join(GLOVE_DIR, 'glove.6B.100d.txt'), 'rb')
         for line in f:
@@ -433,7 +426,7 @@ if __name__ == "__main__":
         
         
         
-        PREDS_PATH = '/home/anneke/Documents/ann-mitchell-text-classification/dataset/vectors'
+        PREDS_PATH = './dataset/vectors'
         
         directory = '{}-{}-{}'.format(args.model,
                                       args.dataset, 
