@@ -1,29 +1,11 @@
 #!/usr/bin/env bash
 
-python3 train_baseline.py \
---word_len '100' \
---dataset "imdb" & 
-python3 train_baseline.py \
---word_len '200' \
---dataset "imdb" & 
-python3 train_baseline.py \
---word_len '300' \
---dataset "imdb" & 
-python3 train_baseline.py \
---word_len '100' \
---dataset "arxiv" & 
-python3 train_baseline.py \
---word_len '200' \
---dataset "arxiv" & 
+# python3 train_baseline.py \
+# --word_len '300' \
+# --dataset "imdb" & 
 python3 train_baseline.py \
 --word_len '300' \
 --dataset "arxiv" & 
-python3 train_baseline.py \
---word_len '100' \
---dataset "agnews" & 
-python3 train_baseline.py \
---word_len '200' \
---dataset "agnews" & 
-python3 train_baseline.py \
---word_len '300' \
---dataset "agnews" & 
+# python3 train_baseline.py \
+# --word_len '300' \
+# --dataset "agnews" & 

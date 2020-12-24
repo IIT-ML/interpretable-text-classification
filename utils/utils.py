@@ -14,25 +14,31 @@ Author: Anneke Hidayat, Mitchell Zhen, Mustafa Bilgic
 
 import os
 import errno
-import numpy as np
-# import matplotlib
-# from matplotlib import pyplot as plt
+
 import csv
 import pandas
 
-# matplotlib.use('Agg')
-# plt.style.use("seaborn")
 
 import re
 
 
-def show_explanations(preds, corpus, explanation_vector, keywordBank, true_label=None, notebook=True, verbose=True):
+def show_explanations(preds, 
+                      corpus, 
+                      explanation_vector, 
+                      keywordBank, 
+                      true_label=None, 
+                      notebook=True, 
+                      verbose=True, 
+                      return_obj=False,
+                     model='our'):
     """
-    Show the explanation given explanation_vector
+    Show the explanation given explanation_vector.
+    We need to modify the explanation IF we use sparse model or our model
     
     # Arguments
         preds:
         explanation_vector:
+        model: ['our', 'sparse']
         
     """
     
@@ -40,44 +46,65 @@ def show_explanations(preds, corpus, explanation_vector, keywordBank, true_label
         # Show to the notebook if displayed on jupyter notebook
         from IPython import display
         
-        k = sorted(list(keywordBank.connotation.keys()))
-        print('Document:')
-        display.display(ColoredWeightedDoc(' '.join(corpus), 
-                                           k, #keywordBank.keyword, 
+        if isinstance(keywordBank, list):
+            pass
+        else:
+            k = sorted(list(keywordBank.connotation.keys()))
+        
+        
+        if return_obj:
+            return ColoredWeightedDoc(' '.join(corpus), 
+                                           k, keywordBank, 
+                                           explanation_vector,
+                                           model,
+                                           binary = True)
+        else:
+            display.display(ColoredWeightedDoc(' '.join(corpus), 
+                                           k, keywordBank, 
                                            explanation_vector, 
+                                           model,
                                            binary = True))
         
-        if verbose:
-            if preds != -1:
-                print('-'*50)
-                if true_label:
-                    print('True label : {}'.format(true_label))
-                print('This document predicted as {} because it has {} keyword justified as shown below:'.format(preds,
-                                                                                               np.sum(explanation_vector!=0)))
-            
-                print()
-                for i,key in enumerate(explanation_vector):
-                    if key != 0:
-                        print('- {}'.format(k[i]))
-            else:
-                if true_label:
-                    print('True label : {}'.format(true_label))
-                print('This document does not has explanation. The model rejected...')
+            if verbose:
+                if preds != -1:
+                    print('-'*50)
+                    if true_label:
+                        print('True label : {}'.format(true_label))
+                    print('This document predicted as {} because it has {} keyword justified as shown below:'.format(preds,
+                                                                                                   np.sum(explanation_vector!=0)))
+
+                    print()
+                    for i,key in enumerate(explanation_vector):
+                        if key != 0:
+                            print('- {}'.format(k[i]))
+                else:
+                    if true_label:
+                        print('True label : {}'.format(true_label))
+                    print('This document does not has explanation. The model rejected...')
 
 class ColoredWeightedDoc(object):
     """
+    This class only supported for our model.
+    We need to declare different class, of different option
+    for sparse model.
+    
     """
     def __init__(self, 
                  doc, 
-                 keyword, 
+                 keyword,
+                 keywordBank,
                  explanation_vector, 
+                 model,
                  token_pattern=r"(?u)\b\w\w+\b", 
                  binary = False):
+        
         self.doc = doc
         self.keyword = keyword
+        self.keywordBank = keywordBank
         self.explanation_vector = explanation_vector
         self.binary = binary
         self.tokenizer = re.compile(token_pattern)
+        self.model = model
         
     def _repr_html_(self):
         html_rep = ""
@@ -91,16 +118,34 @@ class ColoredWeightedDoc(object):
                 try:
                     vocab_index = self.keyword.index(vocab_token)
                     
-                    if not self.binary or vocab_index not in seen_tokens:
+                    
+                    if not self.binary or (vocab_index not in seen_tokens):
+                        # Need to fix this for sparse model
                         
-                        if self.explanation_vector[vocab_index] == 0: # Opposing to the prediction
-                            html_rep = html_rep + "<font size = 4, color=orange> " + token + " </font>"
-                        
-                        elif self.explanation_vector[vocab_index] != 0: # Agreeing to the prediction
-                            html_rep = html_rep + "<font size = 5, color=blue> " + token + " </font>"
-                        
-                        else: # neutral word
-                            html_rep = html_rep + "<font size = 1, color=grey> " + token + " </font>"
+                        if self.model == 'our':
+                            # Opposing to the prediction
+                            if (self.explanation_vector[vocab_index] == 0): 
+                                html_rep = html_rep + "<font size = 1, color=grey> " + token + " </font>"
+                            # Agreeing to the prediction
+                            elif self.explanation_vector[vocab_index] != 0: 
+                                if self.keywordBank.connotation[token.lower()] == 1:
+                                    html_rep = html_rep + "<font size = 5, color=blue> " + token + " </font>"
+                                else:
+                                    html_rep = html_rep + "<font size = 5, color=red> " + token + " </font>"
+                            else: # neutral word
+                                html_rep = html_rep + "<font size = 1, color=grey> " + token + " </font>"
+                                
+                        elif self.model == 'sparse':
+                            
+                            if (self.explanation_vector[vocab_index] != 0):
+                                # positive word
+                                if (self.keywordBank.connotation[token.lower()] == 1):
+                                    html_rep = html_rep + "<font size = 5, color=blue> " + token + " </font>"
+                                # negative word
+                                else:
+                                    html_rep = html_rep + "<font size = 5, color=red> " + token + " </font>"
+                            else: # neutral word
+                                html_rep = html_rep + "<font size = 1, color=grey> " + token + " </font>"
                         
                         if self.binary:    
                             seen_tokens.add(vocab_index)
@@ -111,6 +156,8 @@ class ColoredWeightedDoc(object):
                     html_rep = html_rep + "<font size = 1, color=grey> " + token + " </font>"
             else:
                 html_rep = html_rep + "<font size = 1, color=grey> " + token + " </font>"
+
+        self.html = html_rep
         return html_rep
 
 def vectorize_keywords_docs(X_train_corpus, 
@@ -148,7 +195,7 @@ def vectorize_keywords_docs(X_train_corpus,
     X_train['docs'] = doc_cv.fit_transform([' '.join(text) for text in X_train_corpus])
     X_test['docs'] = doc_cv.transform([' '.join(text) for text in X_test_corpus])
     
-    if keywordBank is not None:
+    if keywordBank:
         key_cv = CountVectorizer(vocabulary=sorted(list(keywordBank.connotation.keys())),
                                  token_pattern=token_pattern,
                                  lowercase=True,
@@ -177,31 +224,6 @@ def vectorize_keywords_docs(X_train_corpus,
     else:
         return X_train, X_test
 
-
-# def plot_log(filename, show=True):
-#     # Taken from https://github.com/XifengGuo/CapsNet-Keras/blob/master/utils.py
-    
-#     data = pandas.read_csv(filename)
-
-#     fig = plt.figure(figsize=(4,6))
-#     fig.subplots_adjust(top=0.95, bottom=0.05, right=0.95)
-#     fig.add_subplot(211)
-#     for key in data.keys():
-#         if key.find('loss') >= 0 and not key.find('val') >= 0:  # training loss
-#             plt.plot(data['epoch'].values, data[key].values, label=key)
-#     plt.legend()
-#     plt.title('Training loss')
-
-#     fig.add_subplot(212)
-#     for key in data.keys():
-#         if key.find('acc') >= 0:  # acc
-#             plt.plot(data['epoch'].values, data[key].values, label=key)
-#     plt.legend()
-#     plt.title('Training and validation accuracy')
-
-#     # fig.savefig('result/log.png')
-#     if show:
-#         plt.show()
 
 def get_keyword(filepath):
     if os.path.exists(filepath):
