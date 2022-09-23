@@ -106,7 +106,7 @@ ply==3.11
 preshed==3.0.2
 prometheus-client==0.7.1
 prompt-toolkit==3.0.2
-protobuf==3.9.1
+protobuf==3.18.3
 ptyprocess==0.6.0
 pyarrow==0.14.1
 pycairo==1.16.2
